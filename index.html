@@ -25,6 +25,11 @@
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans selection:bg-indigo-200 antialiased min-h-screen flex flex-col">
 
+    <!-- 전체 화면 버튼 -->
+    <button onclick="toggleFullScreen()" class="fixed top-4 right-4 z-50 p-3 bg-white border border-gray-200 rounded-full shadow-lg text-gray-700 hover:bg-gray-50 active:scale-95 transition-all">
+        <i data-lucide="maximize" id="fs-icon-global" class="w-6 h-6"></i>
+    </button>
+
     <!-- 메인 메뉴 화면 -->
     <div id="menu-screen" class="w-full max-w-4xl mx-auto px-4 py-12 flex-1">
         <header class="text-center mb-12">
@@ -32,15 +37,16 @@
                 <i data-lucide="gamepad-2" class="w-12 h-12 text-indigo-500"></i>
                 하시 게임
             </h1>
-            <p class="text-gray-500 text-lg">심심할 때 즐기는 17가지 꿀잼 미니게임 모음집!</p>
+            <p class="text-gray-500 text-lg">심심할 때 즐기는 20가지 꿀잼 미니게임 모음집!</p>
         </header>
 
         <div id="games-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             <!-- 게임 목록이 JS로 주입됨 -->
         </div>
         
-        <div class="mt-12 text-center text-gray-400 text-sm">
-            v2.0 (HTML/Vanilla JS) • 모바일 & PC 완벽 지원
+        <div class="mt-12 text-center text-gray-400 text-sm flex flex-col gap-2">
+            <span>v2.1 (HTML/Vanilla JS) • 모바일 & PC 완벽 지원</span>
+            <span>&copy; 2026. 하시소프트웨어. All rights reserved.</span>
         </div>
     </div>
 
@@ -73,6 +79,31 @@
         };
 
         let currentCleanup = null;
+
+        // ==========================================
+        // 전체 화면 토글 로직
+        // ==========================================
+        window.toggleFullScreen = () => {
+            if (!document.fullscreenElement) {
+                if (document.documentElement.requestFullscreen) {
+                    document.documentElement.requestFullscreen().catch(err => console.log(err));
+                }
+            } else {
+                if (document.exitFullscreen) {
+                    document.exitFullscreen();
+                }
+            }
+        };
+
+        document.addEventListener('fullscreenchange', () => {
+            const icon = document.getElementById('fs-icon-global');
+            if (document.fullscreenElement) {
+                icon.setAttribute('data-lucide', 'minimize');
+            } else {
+                icon.setAttribute('data-lucide', 'maximize');
+            }
+            lucide.createIcons();
+        });
 
         // ==========================================
         // 1. 가위바위보 (RPS)
@@ -457,7 +488,15 @@
             board.addEventListener('touchmove', tMove, {passive: true});
             board.addEventListener('mousemove', (e) => { if(e.buttons === 1) tMove(e); });
 
-            return () => cancelAnimationFrame(reqId);
+            const keydown = (e) => {
+                if(!isPlaying) return;
+                if(['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+                if(e.key === 'ArrowLeft') move(-1);
+                if(e.key === 'ArrowRight') move(1);
+            };
+            window.addEventListener('keydown', keydown);
+
+            return () => { cancelAnimationFrame(reqId); window.removeEventListener('keydown', keydown); };
         };
 
         // ==========================================
@@ -839,19 +878,19 @@
 
             container.innerHTML = `
                 <div class="flex flex-col items-center touch-none">
-                    <div class="flex justify-between w-full max-w-[200px] mb-2 text-lg font-bold"><span>점수: <span id="te-score">0</span></span></div>
-                    <div class="relative bg-gray-900 p-1 rounded-sm border-4 border-gray-700 w-[200px] h-[400px]">
+                    <div class="flex justify-between w-full max-w-[260px] mb-2 text-xl font-bold"><span>점수: <span id="te-score">0</span></span></div>
+                    <div class="relative bg-gray-900 p-1 rounded-sm border-4 border-gray-700 w-[260px] h-[520px] shadow-2xl">
                         <div id="te-ov" class="absolute inset-0 bg-black/70 flex flex-col items-center justify-center z-10 text-white">
-                            <p id="te-msg" class="text-xl font-bold mb-2 hidden">게임 오버!</p>
-                            <button id="te-st" class="bg-indigo-500 text-white px-6 py-2 rounded-full font-bold">시작하기</button>
+                            <p id="te-msg" class="text-2xl font-bold mb-2 hidden">게임 오버!</p>
+                            <button id="te-st" class="bg-indigo-500 text-white px-8 py-3 rounded-full font-bold text-lg">시작하기</button>
                         </div>
                         <div id="te-grid" class="w-full h-full grid" style="grid-template-rows: repeat(20, 1fr); grid-template-columns: repeat(10, 1fr);"></div>
                     </div>
-                    <div class="grid grid-cols-3 gap-2 mt-6 w-48 touch-none">
-                        <div></div><button id="te-up" class="bg-gray-200 p-3 rounded-lg flex justify-center shadow"><i data-lucide="rotate-ccw"></i></button><div></div>
-                        <button id="te-left" class="bg-gray-200 p-3 rounded-lg flex justify-center shadow"><i data-lucide="chevron-left"></i></button>
-                        <button id="te-down" class="bg-gray-200 p-3 rounded-lg flex justify-center shadow"><i data-lucide="chevron-down"></i></button>
-                        <button id="te-right" class="bg-gray-200 p-3 rounded-lg flex justify-center shadow"><i data-lucide="chevron-right"></i></button>
+                    <div class="grid grid-cols-3 gap-3 mt-8 w-[260px] touch-none">
+                        <div></div><button id="te-up" class="bg-gray-200 p-4 rounded-xl flex justify-center shadow-md active:bg-gray-300"><i data-lucide="rotate-ccw" class="w-7 h-7"></i></button><div></div>
+                        <button id="te-left" class="bg-gray-200 p-4 rounded-xl flex justify-center shadow-md active:bg-gray-300"><i data-lucide="chevron-left" class="w-7 h-7"></i></button>
+                        <button id="te-down" class="bg-gray-200 p-4 rounded-xl flex justify-center shadow-md active:bg-gray-300"><i data-lucide="chevron-down" class="w-7 h-7"></i></button>
+                        <button id="te-right" class="bg-gray-200 p-4 rounded-xl flex justify-center shadow-md active:bg-gray-300"><i data-lucide="chevron-right" class="w-7 h-7"></i></button>
                     </div>
                 </div>
             `;
@@ -902,7 +941,7 @@
                 grid.innerHTML = '';
                 for(let y=0; y<R; y++) for(let x=0; x<C; x++) {
                     const cell = document.createElement('div');
-                    cell.className = `w-[18px] h-[18px] border-[0.5px] border-gray-800/30 ${d[y][x] || 'bg-transparent'}`;
+                    cell.className = `w-full h-full border-[0.5px] border-gray-800/40 ${d[y][x] || 'bg-transparent'}`;
                     cell.style.gridRow = y+1; cell.style.gridColumn = x+1;
                     grid.appendChild(cell);
                 }
@@ -1241,7 +1280,15 @@
             board.addEventListener('touchmove', tmv, {passive:true});
             board.addEventListener('mousemove', (e)=>{if(e.buttons===1)tmv(e);});
 
-            return () => cancelAnimationFrame(reqId);
+            const keydown = (e) => {
+                if(!play) return;
+                if(['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+                if(e.key === 'ArrowLeft') mv(-1);
+                if(e.key === 'ArrowRight') mv(1);
+            };
+            window.addEventListener('keydown', keydown);
+
+            return () => { cancelAnimationFrame(reqId); window.removeEventListener('keydown', keydown); };
         };
 
         // ==========================================
@@ -1328,7 +1375,7 @@
 
             const start = () => {
                 score=0; px=50; obs=[]; play=true; lastT=performance.now();
-                finishTime = performance.now() + 15000 + Math.random() * 15000; // 15초 ~ 30초 사이 랜덤
+                finishTime = performance.now() + 15000 + Math.random() * 15000;
                 finishLine = null;
                 player.style.left = '50%';
                 document.getElementById('rc-ov').classList.add('hidden');
@@ -1341,7 +1388,6 @@
                 if(!play) return;
                 score++; document.getElementById('rc-score').textContent = Math.floor(score/5);
 
-                // 결승선 출현 로직
                 if (!finishLine && time > finishTime) {
                     const el = document.createElement('div');
                     el.className = 'rc-finish absolute w-full h-8 bg-white/80 flex items-center justify-center text-black font-bold tracking-widest border-y-4 border-black z-0';
@@ -1351,7 +1397,6 @@
                     finishLine = { el, y: -10, spd: 1.5 + (score*0.001) };
                 }
 
-                // 결승선이 나오기 전까지만 장애물 생성
                 if (!finishLine) {
                     if(time - lastT > Math.max(250, 800-score*0.2)) {
                         const el = document.createElement('div');
@@ -1364,7 +1409,6 @@
                     }
                 }
 
-                // 결승선 이동 및 완주 체크
                 if (finishLine) {
                     finishLine.y += finishLine.spd;
                     finishLine.el.style.top = `${finishLine.y}%`;
@@ -1426,6 +1470,402 @@
             return () => { cancelAnimationFrame(reqId); window.removeEventListener('keydown', keydown); };
         };
 
+        // ==========================================
+        // 18. 스네이크 & NPC (Snake with NPCs)
+        // ==========================================
+        const mountSnake = (container) => {
+            const SIZE = 20;
+            let play=false, score=0, tId=null;
+            let player = [], pDir = {x:0,y:-1}, nextDir = {x:0,y:-1};
+            let npcs = [], food = {x:5,y:5};
+
+            container.innerHTML = `
+                <div class="flex flex-col items-center touch-none">
+                    <div class="flex justify-between w-full max-w-[280px] mb-2 text-xl font-bold"><span class="text-emerald-600">점수: <span id="sn-score">0</span></span></div>
+                    <div class="relative bg-lime-50 border-4 border-lime-800 w-[280px] h-[280px] box-content">
+                        <div id="sn-ov" class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-20 text-white">
+                            <p id="sn-msg" class="text-xl font-bold mb-4 hidden"></p>
+                            <button id="sn-st" class="bg-emerald-500 text-white px-6 py-2 rounded-full font-bold">게임 시작</button>
+                        </div>
+                        <div id="sn-grid" class="w-full h-full relative"></div>
+                    </div>
+                    <div class="grid grid-cols-3 gap-2 mt-6 w-48 touch-none">
+                        <div></div><button id="sn-up" class="bg-gray-200 p-4 rounded-lg flex justify-center active:bg-gray-300"><i data-lucide="chevron-up"></i></button><div></div>
+                        <button id="sn-left" class="bg-gray-200 p-4 rounded-lg flex justify-center active:bg-gray-300"><i data-lucide="chevron-left"></i></button>
+                        <button id="sn-down" class="bg-gray-200 p-4 rounded-lg flex justify-center active:bg-gray-300"><i data-lucide="chevron-down"></i></button>
+                        <button id="sn-right" class="bg-gray-200 p-4 rounded-lg flex justify-center active:bg-gray-300"><i data-lucide="chevron-right"></i></button>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+            const grid = document.getElementById('sn-grid');
+
+            const spawnFood = () => {
+                food = { x: Math.floor(Math.random()*SIZE), y: Math.floor(Math.random()*SIZE) };
+            };
+
+            const draw = () => {
+                grid.innerHTML = '';
+                // Draw Food
+                const fDiv = document.createElement('div');
+                fDiv.className = 'absolute bg-red-500 rounded-full animate-pulse';
+                fDiv.style.width = '14px'; fDiv.style.height = '14px';
+                fDiv.style.left = `${food.x*14}px`; fDiv.style.top = `${food.y*14}px`;
+                grid.appendChild(fDiv);
+
+                // Draw NPCs
+                npcs.forEach(npc => {
+                    npc.body.forEach((pt, i) => {
+                        const div = document.createElement('div');
+                        div.className = `absolute ${i===0?'bg-orange-700':'bg-orange-400'} rounded-sm`;
+                        div.style.width = '14px'; div.style.height = '14px';
+                        div.style.left = `${pt.x*14}px`; div.style.top = `${pt.y*14}px`;
+                        grid.appendChild(div);
+                    });
+                });
+
+                // Draw Player
+                player.forEach((pt, i) => {
+                    const div = document.createElement('div');
+                    div.className = `absolute ${i===0?'bg-emerald-700':'bg-emerald-400'} rounded-sm`;
+                    div.style.width = '14px'; div.style.height = '14px';
+                    div.style.left = `${pt.x*14}px`; div.style.top = `${pt.y*14}px`;
+                    grid.appendChild(div);
+                });
+            };
+
+            const isCollision = (pt, excludeHead=false) => {
+                if(pt.x<0 || pt.x>=SIZE || pt.y<0 || pt.y>=SIZE) return true; // wall
+                for(let i=excludeHead?1:0; i<player.length; i++) if(player[i].x===pt.x && player[i].y===pt.y) return true;
+                for(let n of npcs) for(let p of n.body) if(p.x===pt.x && p.y===pt.y) return true;
+                return false;
+            };
+
+            const move = () => {
+                if(!play) return;
+                pDir = nextDir;
+                const head = { x: player[0].x + pDir.x, y: player[0].y + pDir.y };
+
+                // Player Collision
+                if(isCollision(head)) {
+                    play=false; clearInterval(tId);
+                    document.getElementById('sn-ov').classList.remove('hidden');
+                    document.getElementById('sn-msg').textContent = `윽! 부딪혔다. 점수: ${score}`;
+                    document.getElementById('sn-msg').classList.remove('hidden');
+                    document.getElementById('sn-st').textContent = '다시하기';
+                    return;
+                }
+
+                player.unshift(head);
+                if(head.x===food.x && head.y===food.y) { score+=10; document.getElementById('sn-score').textContent=score; spawnFood(); }
+                else player.pop();
+
+                // Move NPCs
+                npcs.forEach(npc => {
+                    if(Math.random() < 0.2) { // 20% chance to change direction
+                        const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+                        npc.dir = dirs[Math.floor(Math.random()*4)];
+                    }
+                    let nHead = { x: npc.body[0].x + npc.dir.x, y: npc.body[0].y + npc.dir.y };
+                    
+                    // If blocked, just pick any valid or don't move this turn
+                    if(isCollision(nHead)) {
+                        const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
+                        let moved = false;
+                        for(let d of dirs) {
+                            let test = { x: npc.body[0].x + d.x, y: npc.body[0].y + d.y };
+                            if(!isCollision(test)) { nHead = test; npc.dir = d; moved = true; break; }
+                        }
+                        if(!moved) return; // stuck
+                    }
+
+                    npc.body.unshift(nHead);
+                    if(nHead.x===food.x && nHead.y===food.y) spawnFood(); // NPC eats
+                    else npc.body.pop();
+                });
+
+                draw();
+            };
+
+            const start = () => {
+                score=0; play=true; document.getElementById('sn-score').textContent=0;
+                player = [{x:10,y:10},{x:10,y:11},{x:10,y:12}]; pDir = {x:0,y:-1}; nextDir = {x:0,y:-1};
+                npcs = [
+                    { body: [{x:2,y:2},{x:2,y:3}], dir: {x:1,y:0} },
+                    { body: [{x:17,y:17},{x:18,y:17}], dir: {x:-1,y:0} }
+                ];
+                spawnFood(); draw();
+                document.getElementById('sn-ov').classList.add('hidden');
+                clearInterval(tId); tId = setInterval(move, 150);
+            };
+
+            document.getElementById('sn-st').addEventListener('click', start);
+            
+            const setD = (nx, ny) => { if(play && pDir.x !== -nx && pDir.y !== -ny) nextDir = {x:nx, y:ny}; };
+            document.getElementById('sn-up').addEventListener('click', ()=>setD(0,-1));
+            document.getElementById('sn-down').addEventListener('click', ()=>setD(0,1));
+            document.getElementById('sn-left').addEventListener('click', ()=>setD(-1,0));
+            document.getElementById('sn-right').addEventListener('click', ()=>setD(1,0));
+
+            const keydown = (e) => {
+                if(!play) return;
+                if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+                if(e.key==='ArrowUp') setD(0,-1); if(e.key==='ArrowDown') setD(0,1);
+                if(e.key==='ArrowLeft') setD(-1,0); if(e.key==='ArrowRight') setD(1,0);
+            };
+            window.addEventListener('keydown', keydown);
+
+            return () => { clearInterval(tId); window.removeEventListener('keydown', keydown); };
+        };
+
+        // ==========================================
+        // 19. 2048 (Puzzle)
+        // ==========================================
+        const mount2048 = (container) => {
+            let board = [], score = 0, play = false;
+
+            container.innerHTML = `
+                <div class="flex flex-col items-center touch-none select-none">
+                    <div class="flex justify-between w-full max-w-[280px] mb-4 text-xl font-bold">
+                        <span class="text-amber-700">점수: <span id="p-score">0</span></span>
+                    </div>
+                    <div id="p-board" class="relative bg-[#bbada0] p-2 rounded-xl w-[280px] h-[280px] grid grid-cols-4 grid-rows-4 gap-2 touch-none">
+                        <div id="p-ov" class="absolute inset-0 bg-white/70 flex flex-col items-center justify-center z-20">
+                            <p id="p-msg" class="text-2xl font-bold text-gray-800 mb-4 hidden">게임 오버!</p>
+                            <button id="p-st" class="bg-amber-600 text-white px-6 py-2 rounded-full font-bold">시작하기</button>
+                        </div>
+                    </div>
+                    <p class="mt-4 text-sm text-gray-500">PC: 방향키 / 모바일: 화면 스와이프</p>
+                </div>
+            `;
+
+            const colors = {
+                2: 'bg-[#eee4da] text-[#776e65]', 4: 'bg-[#ede0c8] text-[#776e65]', 8: 'bg-[#f2b179] text-white', 16: 'bg-[#f59563] text-white',
+                32: 'bg-[#f67c5f] text-white', 64: 'bg-[#f65e3b] text-white', 128: 'bg-[#edcf72] text-white', 256: 'bg-[#edcc61] text-white',
+                512: 'bg-[#edc850] text-white', 1024: 'bg-[#edc53f] text-white', 2048: 'bg-[#edc22e] text-white shadow-[0_0_10px_yellow]'
+            };
+
+            const grid = document.getElementById('p-board');
+
+            const draw = () => {
+                grid.querySelectorAll('.p-tile').forEach(e=>e.remove());
+                for(let r=0; r<4; r++) {
+                    for(let c=0; c<4; c++) {
+                        const bg = document.createElement('div');
+                        bg.className = 'bg-[#cdc1b4] rounded-sm w-full h-full p-tile';
+                        grid.appendChild(bg);
+                        
+                        if(board[r][c] !== 0) {
+                            const val = board[r][c];
+                            const tile = document.createElement('div');
+                            tile.className = `absolute w-[60px] h-[60px] rounded-sm flex items-center justify-center font-bold text-2xl transition-all p-tile ${colors[val] || 'bg-black text-white'}`;
+                            tile.style.left = `${c*68 + 8}px`; tile.style.top = `${r*68 + 8}px`;
+                            tile.textContent = val;
+                            grid.appendChild(tile);
+                        }
+                    }
+                }
+                document.getElementById('p-score').textContent = score;
+            };
+
+            const spawn = () => {
+                let empty = [];
+                for(let r=0; r<4; r++) for(let c=0; c<4; c++) if(board[r][c]===0) empty.push({r,c});
+                if(empty.length>0) {
+                    let {r,c} = empty[Math.floor(Math.random()*empty.length)];
+                    board[r][c] = Math.random()>0.1 ? 2 : 4;
+                }
+            };
+
+            const move = (dir) => { // 0:up, 1:right, 2:down, 3:left
+                if(!play) return;
+                let moved = false;
+                let newBoard = JSON.parse(JSON.stringify(board));
+
+                const slide = (arr) => {
+                    let res = arr.filter(v=>v);
+                    for(let i=0; i<res.length-1; i++) {
+                        if(res[i]===res[i+1]) { res[i]*=2; score+=res[i]; res[i+1]=0; }
+                    }
+                    res = res.filter(v=>v);
+                    while(res.length<4) res.push(0);
+                    return res;
+                };
+
+                for(let i=0; i<4; i++) {
+                    let row = [];
+                    for(let j=0; j<4; j++) {
+                        if(dir===0) row.push(newBoard[j][i]);
+                        if(dir===1) row.push(newBoard[i][3-j]);
+                        if(dir===2) row.push(newBoard[3-j][i]);
+                        if(dir===3) row.push(newBoard[i][j]);
+                    }
+                    let slided = slide(row);
+                    for(let j=0; j<4; j++) {
+                        let orig;
+                        if(dir===0) { orig = newBoard[j][i]; newBoard[j][i] = slided[j]; }
+                        if(dir===1) { orig = newBoard[i][3-j]; newBoard[i][3-j] = slided[j]; }
+                        if(dir===2) { orig = newBoard[3-j][i]; newBoard[3-j][i] = slided[j]; }
+                        if(dir===3) { orig = newBoard[i][j]; newBoard[i][j] = slided[j]; }
+                        if(orig !== slided[j]) moved = true;
+                    }
+                }
+
+                if(moved) {
+                    board = newBoard; spawn(); draw();
+                    // Check game over
+                    let over = true;
+                    for(let r=0; r<4; r++) for(let c=0; c<4; c++) {
+                        if(board[r][c]===0) over=false;
+                        if(c<3 && board[r][c]===board[r][c+1]) over=false;
+                        if(r<3 && board[r][c]===board[r+1][c]) over=false;
+                    }
+                    if(over) {
+                        play = false;
+                        document.getElementById('p-ov').classList.remove('hidden');
+                        document.getElementById('p-msg').classList.remove('hidden');
+                        document.getElementById('p-st').textContent = '다시하기';
+                    }
+                }
+            };
+
+            document.getElementById('p-st').addEventListener('click', () => {
+                board = [[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]]; score=0; play=true;
+                spawn(); spawn(); draw();
+                document.getElementById('p-ov').classList.add('hidden');
+            });
+
+            // Swipe logic
+            let sx=0, sy=0;
+            grid.addEventListener('touchstart', e => { sx=e.touches[0].clientX; sy=e.touches[0].clientY; }, {passive:false});
+            grid.addEventListener('touchend', e => {
+                let ex=e.changedTouches[0].clientX, ey=e.changedTouches[0].clientY;
+                let dx=ex-sx, dy=ey-sy;
+                if(Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>30) move(dx>0?1:3);
+                else if(Math.abs(dy)>Math.abs(dx) && Math.abs(dy)>30) move(dy>0?2:0);
+            }, {passive:false});
+            grid.addEventListener('touchmove', e => e.preventDefault(), {passive:false});
+
+            const keydown = (e) => {
+                if(!play) return;
+                if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+                if(e.key==='ArrowUp') move(0); if(e.key==='ArrowRight') move(1);
+                if(e.key==='ArrowDown') move(2); if(e.key==='ArrowLeft') move(3);
+            };
+            window.addEventListener('keydown', keydown);
+
+            return () => window.removeEventListener('keydown', keydown);
+        };
+
+        // ==========================================
+        // 20. 벽돌 깨기 (Breakout)
+        // ==========================================
+        const mountBreakout = (container) => {
+            let play=false, reqId;
+            let px=110, bx=140, by=200, vx=3, vy=-3;
+            let bricks=[], score=0;
+
+            container.innerHTML = `
+                <div class="flex flex-col items-center w-full touch-none select-none">
+                    <div class="flex justify-between w-full max-w-[280px] mb-2 text-xl font-bold">
+                        <span class="text-rose-600">점수: <span id="br-score">0</span></span>
+                    </div>
+                    <div id="br-board" class="relative bg-gray-800 w-[280px] h-[340px] rounded-xl overflow-hidden shadow-inner">
+                        <div id="br-ov" class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-20 text-white">
+                            <p id="br-msg" class="text-2xl font-bold mb-4 hidden"></p>
+                            <button id="br-st" class="bg-rose-500 px-6 py-2 rounded-full font-bold">시작하기</button>
+                        </div>
+                        <div id="br-paddle" class="absolute bottom-4 w-[60px] h-[10px] bg-cyan-400 rounded-full shadow-[0_0_8px_cyan]"></div>
+                        <div id="br-ball" class="absolute w-[10px] h-[10px] bg-white rounded-full shadow-[0_0_8px_white]"></div>
+                        <div id="br-bricks"></div>
+                    </div>
+                    <p class="mt-4 text-sm text-gray-500">화면을 터치해서 움직여봐!</p>
+                </div>
+            `;
+            const board = document.getElementById('br-board');
+            const paddle = document.getElementById('br-paddle');
+            const ball = document.getElementById('br-ball');
+            const bricksDiv = document.getElementById('br-bricks');
+
+            const initBricks = () => {
+                bricks = []; bricksDiv.innerHTML = '';
+                const colors = ['bg-red-500','bg-orange-500','bg-yellow-400','bg-green-500','bg-blue-500'];
+                for(let r=0; r<5; r++) {
+                    for(let c=0; c<6; c++) {
+                        let b = { x: c*44+10, y: r*18+10, w: 40, h: 14, active: true, el: document.createElement('div') };
+                        b.el.className = `absolute rounded-sm ${colors[r]}`;
+                        b.el.style.width=`${b.w}px`; b.el.style.height=`${b.h}px`;
+                        b.el.style.left=`${b.x}px`; b.el.style.top=`${b.y}px`;
+                        bricksDiv.appendChild(b.el);
+                        bricks.push(b);
+                    }
+                }
+            };
+
+            const start = () => {
+                play=true; score=0; px=110; bx=135; by=280; vx=3; vy=-3;
+                document.getElementById('br-score').textContent=0;
+                document.getElementById('br-ov').classList.add('hidden');
+                initBricks();
+                reqId = requestAnimationFrame(loop);
+            };
+
+            const loop = () => {
+                if(!play) return;
+                bx+=vx; by+=vy;
+
+                // Wall collision
+                if(bx<=0 || bx>=270) vx = -vx;
+                if(by<=0) vy = -vy;
+
+                // Paddle collision (y=326, h=10, w=60)
+                if(by>=316 && by<=326 && bx>=px-10 && bx<=px+60) {
+                    vy = -Math.abs(vy);
+                    vx = (bx - (px+30)) * 0.15; // 바운스 각도 변경
+                }
+
+                // Brick collision
+                let hitCount = 0;
+                for(let b of bricks) {
+                    if(b.active && bx>=b.x-10 && bx<=b.x+b.w && by>=b.y-10 && by<=b.y+b.h) {
+                        b.active=false; b.el.classList.add('hidden');
+                        vy = -vy; score+=10; document.getElementById('br-score').textContent=score;
+                        break; // 한 프레임에 하나만
+                    }
+                    if(!b.active) hitCount++;
+                }
+
+                ball.style.left=`${bx}px`; ball.style.top=`${by}px`;
+                paddle.style.left=`${px}px`;
+
+                // Game Over
+                if(by>=340) {
+                    play=false;
+                    document.getElementById('br-ov').classList.remove('hidden');
+                    document.getElementById('br-msg').textContent = '앗! 떨어졌다!';
+                    document.getElementById('br-msg').classList.remove('hidden');
+                    document.getElementById('br-st').textContent = '다시하기';
+                } else if(hitCount === 30) {
+                    play=false;
+                    document.getElementById('br-ov').classList.remove('hidden');
+                    document.getElementById('br-msg').textContent = '🎉 퍼펙트 클리어! 🎉';
+                    document.getElementById('br-msg').classList.remove('hidden');
+                    document.getElementById('br-st').textContent = '다시하기';
+                } else reqId = requestAnimationFrame(loop);
+            };
+
+            document.getElementById('br-st').addEventListener('click', start);
+
+            const tmv = (e) => {
+                if(!play) return;
+                const rect = board.getBoundingClientRect();
+                px = Math.max(0,Math.min(220, ((e.touches?e.touches[0].clientX:e.clientX)-rect.left) - 30));
+            };
+            board.addEventListener('touchmove', tmv, {passive:true});
+            board.addEventListener('mousemove', (e)=>{if(e.buttons===1)tmv(e);});
+
+            return () => cancelAnimationFrame(reqId);
+        };
 
         // ==========================================
         // 메인 데이터 & 라우팅
@@ -1448,6 +1888,9 @@
             { id: 'bomb', title: '폭탄 피하기', icon: 'bomb', color: 'bg-slate-200 text-slate-700', mount: mountBomb },
             { id: 'typing', title: '단어 타자', icon: 'keyboard', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountTyping },
             { id: 'racing', title: '레이싱', icon: 'car-front', color: 'bg-yellow-100 text-yellow-600', mount: mountRacing },
+            { id: 'snake', title: '스네이크(NPC)', icon: 'bug', color: 'bg-lime-100 text-lime-700', mount: mountSnake },
+            { id: '2048', title: '2048', icon: 'layout-grid', color: 'bg-amber-100 text-amber-800', mount: mount2048 },
+            { id: 'breakout', title: '벽돌 깨기', icon: 'layout-template', color: 'bg-rose-100 text-rose-700', mount: mountBreakout },
         ];
 
         function initMenu() {
@@ -1497,4 +1940,3 @@
     </script>
 </body>
 </html>
-
