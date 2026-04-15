@@ -47,7 +47,7 @@
         </div>
         
         <div class="mt-12 text-center text-gray-400 text-sm flex flex-col gap-2">
-            <span>v2.2 (HTML/Vanilla JS) • 모바일 & PC 완벽 지원</span>
+            <span>v2.2</span>
             <span>&copy; 2026. 하시소프트웨어. All rights reserved.</span>
         </div>
     </div>
@@ -2182,107 +2182,234 @@
         // 22. 픽시 자전거 (Fixie Bike Jump)
         // ==========================================
         const mountBikeJump = (container) => {
-            let play=false, score=0, over=false;
-            let py=0, vy=0, sliding=false, slideTimer=0;
-            let obs=[];
-            let reqId, lastT=0;
-
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full touch-none select-none">
                     <div class="flex justify-between w-full max-w-sm px-4 mb-4 text-xl font-bold">
                         <span class="text-sky-600">점수: <span id="bj-score">0</span></span>
                     </div>
-                    <div id="bj-board" class="relative bg-sky-100 border-b-4 border-gray-800 w-full max-w-sm h-56 overflow-hidden shadow-inner rounded-t-xl cursor-pointer">
+                    <div id="bj-board" class="relative bg-sky-200 border-b-4 border-gray-800 w-full max-w-sm h-64 overflow-hidden shadow-inner rounded-t-xl cursor-pointer">
+                        <div id="bj-canvas-container" class="absolute inset-0"></div>
                         <div id="bj-ov" class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-30 text-white">
                             <p id="bj-msg" class="text-2xl font-bold mb-2 hidden">💥 쾅!</p>
                             <button id="bj-st" class="bg-sky-500 px-6 py-2 rounded-full font-bold mt-2 shadow-lg">출발하기</button>
                         </div>
-                        <div id="bj-player" class="absolute bottom-0 w-12 h-12 flex items-end justify-center text-4xl transition-transform duration-75 z-20" style="left:10%; transform-origin: bottom center;">
-                            <span id="bj-emoji">🚴</span>
-                        </div>
                     </div>
                     <div class="flex justify-center space-x-4 mt-6 w-full max-w-sm px-4">
                         <button id="bj-btn-jump" class="flex-1 bg-gray-200 p-4 rounded-xl flex items-center justify-center font-bold active:bg-gray-300 shadow-sm"><i data-lucide="arrow-up" class="mr-2"></i> 점프</button>
-                        <button id="bj-btn-slide" class="flex-1 bg-gray-200 p-4 rounded-xl flex items-center justify-center font-bold active:bg-gray-300 shadow-sm"><i data-lucide="arrow-down" class="mr-2"></i> 슬라이딩</button>
+                        <button id="bj-btn-slide" class="flex-1 bg-gray-200 p-4 rounded-xl flex items-center justify-center font-bold active:bg-gray-300 shadow-sm"><i data-lucide="arrow-down" class="mr-2"></i> 숙이기</button>
                     </div>
-                    <p class="mt-4 text-sm text-gray-500 text-center">벽은 점프(위/스페이스), 새는 슬라이딩(아래)으로 피해!</p>
+                    <p class="mt-4 text-sm text-gray-500 text-center">벽은 점프(위/스페이스), 새는 숙이기(아래)로 피해!</p>
                 </div>
             `;
             lucide.createIcons();
-            
-            const board = document.getElementById('bj-board');
-            const pEl = document.getElementById('bj-player');
 
-            const doJump = () => { if(play && py===0 && !sliding) vy = 8.5; };
-            const doSlide = () => { if(play && py===0 && !sliding) { sliding = true; slideTimer = 35; } };
+            let play = false, score = 0, over = false;
+            let py = 0, vy = 0, sliding = false, slideTimer = 0;
+            let reqId, lastT = 0, nextSpawnDelay = 1500;
+            const gravity = 0.025;
+            const jumpPower = 0.45;
+
+            // 3D Scene Setup
+            const canvasContainer = document.getElementById('bj-canvas-container');
+            const width = canvasContainer.clientWidth || 300;
+            const height = canvasContainer.clientHeight || 256;
+            
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xa0e0ff); // 하늘색 배경
+            const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);
+            camera.position.set(0, 3, 10); // 측면-후면 약간 비스듬히
+            camera.lookAt(0, 1.5, 0);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            canvasContainer.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
+            dirLight.position.set(5, 10, 5);
+            scene.add(dirLight);
+
+            // Ground & Scrolling lines
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0xd4a373 }); // 흙바닥 느낌
+            const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 20), groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            scene.add(ground);
+
+            const lines = [];
+            for(let i=0; i<8; i++) {
+                const lMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.1), new THREE.MeshBasicMaterial({color: 0x8b5a2b}));
+                lMesh.rotation.x = -Math.PI / 2;
+                lMesh.position.set(-15 + i*5, 0.01, 0);
+                scene.add(lMesh);
+                lines.push(lMesh);
+            }
+
+            // Player (Bike + Rider)
+            const playerGrp = new THREE.Group();
+            playerGrp.position.set(-4, 0.5, 0); 
+            
+            // Bike
+            const bikeGrp = new THREE.Group();
+            const wheelMat = new THREE.MeshStandardMaterial({color: 0x222222, roughness: 0.9});
+            const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.15, 16);
+            wheelGeo.rotateX(Math.PI/2);
+            const fWheel = new THREE.Mesh(wheelGeo, wheelMat); fWheel.position.set(1.2, 0, 0);
+            const bWheel = new THREE.Mesh(wheelGeo, wheelMat); bWheel.position.set(-1.2, 0, 0);
+            bikeGrp.add(fWheel); bikeGrp.add(bWheel);
+            const frame = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.1, 0.1), new THREE.MeshStandardMaterial({color: 0x0ea5e9}));
+            frame.position.set(0, 0.5, 0);
+            const handlebar = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 0.1), new THREE.MeshStandardMaterial({color: 0xcccccc}));
+            handlebar.position.set(0.9, 0.8, 0);
+            bikeGrp.add(frame); bikeGrp.add(handlebar);
+            playerGrp.add(bikeGrp);
+
+            // Rider
+            const riderGrp = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.6), new THREE.MeshStandardMaterial({color: 0xef4444})); // 빨간 옷
+            body.position.set(0, 1.1, 0);
+            const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({color: 0xffdebb})); // 얼굴
+            head.position.set(0, 1.9, 0);
+            riderGrp.add(body); riderGrp.add(head);
+            playerGrp.add(riderGrp);
+            
+            scene.add(playerGrp);
+            
+            let obstacles = [];
+
+            const doJump = () => { if(play && py === 0 && !sliding) vy = jumpPower; };
+            const doSlide = () => { if(play && py === 0 && !sliding) { sliding = true; slideTimer = 35; } };
 
             const start = () => {
-                score=0; py=0; vy=0; sliding=false; slideTimer=0; obs=[]; play=true; over=false; lastT=performance.now();
+                score=0; py=0; vy=0; sliding=false; slideTimer=0; play=true; over=false; lastT=performance.now(); nextSpawnDelay=1500;
                 document.getElementById('bj-score').textContent = 0;
-                pEl.innerHTML = '<span id="bj-emoji">🚴</span>'; 
-                pEl.style.transform = `translateY(0px) rotate(0deg)`;
                 document.getElementById('bj-ov').classList.add('hidden');
-                document.querySelectorAll('.bj-obs').forEach(e=>e.remove());
+                
+                // Reset positions
+                playerGrp.position.y = 0.5;
+                riderGrp.position.set(0, 0, 0); riderGrp.rotation.z = 0;
+                bikeGrp.position.set(0, 0, 0); bikeGrp.rotation.z = 0;
+                
+                obstacles.forEach(o => scene.remove(o.mesh));
+                obstacles = [];
                 reqId = requestAnimationFrame(loop);
             };
 
             const loop = (time) => {
-                if(!play) return;
+                const speed = 0.2 + (score * 0.0001); // 진행 속도
                 
-                py += vy;
-                if(py > 0) vy -= 0.45; else { py = 0; vy = 0; }
-                if(sliding) { slideTimer--; if(slideTimer<=0) sliding = false; }
+                if (over) {
+                    // 데스 애니메이션 (뒹굴기)
+                    riderGrp.position.x += 0.15;
+                    riderGrp.position.y -= 0.05;
+                    riderGrp.rotation.z -= 0.1;
+                    bikeGrp.rotation.z += 0.05;
+                    bikeGrp.position.x -= 0.05;
+                    
+                    renderer.render(scene, camera);
+                    if (riderGrp.position.y > -5) {
+                        reqId = requestAnimationFrame(loop); // 조금 더 뒹굴게 냅둠
+                    }
+                    return;
+                }
 
-                if(!over) {
-                    if(sliding) {
-                        pEl.style.transform = `translateY(0px) rotate(-60deg) scaleY(0.7)`; 
+                if(!play) return;
+
+                // 스크롤링 이펙트
+                lines.forEach(m => {
+                    m.position.x -= speed;
+                    if(m.position.x < -20) m.position.x += 40;
+                });
+
+                // 슬라이딩 로직
+                if(sliding) {
+                    slideTimer--;
+                    if(slideTimer <= 0) sliding = false;
+                    riderGrp.rotation.z = -Math.PI / 2.2; // 허리를 바짝 숙임
+                    riderGrp.position.y = -0.5;
+                    riderGrp.position.x = -0.4;
+                } else {
+                    riderGrp.rotation.z = 0;
+                    riderGrp.position.y = 0;
+                    riderGrp.position.x = 0;
+                }
+
+                // 점프 물리
+                py += vy;
+                if(py > 0) vy -= gravity;
+                else { py = 0; vy = 0; }
+                playerGrp.position.y = 0.5 + py;
+
+                // 바퀴 회전
+                fWheel.rotation.z -= speed * 2;
+                bWheel.rotation.z -= speed * 2;
+                
+                // 점수 및 장애물 생성
+                score++;
+                if(score % 5 === 0) document.getElementById('bj-score').textContent = Math.floor(score/5);
+
+                if(time - lastT > nextSpawnDelay) {
+                    const isBird = Math.random() > 0.5;
+                    const obsMesh = new THREE.Group();
+                    
+                    if (isBird) {
+                        // 독수리 모델 (간단하게)
+                        const bBody = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1), new THREE.MeshStandardMaterial({color: 0x333333}));
+                        bBody.rotation.z = Math.PI / 2;
+                        const bWing = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 2), new THREE.MeshStandardMaterial({color: 0x111111}));
+                        bWing.position.y = 0.2;
+                        obsMesh.add(bBody); obsMesh.add(bWing);
+                        obsMesh.position.set(15, 2.5, 0); // 공중에 스폰
                     } else {
-                        pEl.style.transform = `translateY(-${py*2.5}px) rotate(${py>0 ? -15 : 0}deg)`; 
+                        // 벽돌 모델
+                        const wallGeo = new THREE.BoxGeometry(1, 1.4, 2);
+                        const wallMat = new THREE.MeshStandardMaterial({color: 0xb91c1c}); // 벽돌색
+                        const wall = new THREE.Mesh(wallGeo, wallMat);
+                        obsMesh.add(wall);
+                        obsMesh.position.set(15, 0.7, 0); // 바닥에 스폰
+                    }
+                    
+                    scene.add(obsMesh);
+                    obstacles.push({ mesh: obsMesh });
+                    lastT = time;
+                    const baseDelay = Math.max(700, 1500 - score * 0.3);
+                    nextSpawnDelay = baseDelay + Math.random() * 1200; // 랜덤한 간격 추가
+                }
+
+                // 충돌 검사
+                let hit = false;
+                const playerBox = new THREE.Box3().setFromObject(playerGrp);
+                playerBox.expandByScalar(-0.25); // 판정을 약간 널널하게 보정
+                
+                if (sliding) {
+                    playerBox.max.y = Math.min(playerBox.max.y, 1.2); // 숙일시 머리 판정을 강제로 낮춤 (새 피하기)
+                }
+
+                for(let i = obstacles.length - 1; i >= 0; i--) {
+                    let obs = obstacles[i];
+                    obs.mesh.position.x -= speed;
+                    
+                    const obsBox = new THREE.Box3().setFromObject(obs.mesh);
+                    obsBox.expandByScalar(-0.2);
+                    
+                    if(playerBox.intersectsBox(obsBox)) hit = true;
+
+                    if(obs.mesh.position.x < -15) {
+                        scene.remove(obs.mesh);
+                        obstacles.splice(i, 1);
                     }
                 }
 
-                score++;
-                if(score % 10 === 0) document.getElementById('bj-score').textContent = Math.floor(score/10);
-                
-                const speed = 1.3 + (score*0.0003);
-                if(time - lastT > Math.max(700, 1500 - score*0.1)) {
-                    const isBird = Math.random() > 0.5; 
-                    const ob = { id: Math.random(), type: isBird?'bird':'wall', x: 100, y: isBird?35:0, spd: speed, el: document.createElement('div') };
-                    ob.el.className = 'bj-obs absolute text-3xl z-10';
-                    ob.el.textContent = isBird ? '🦅' : '🧱';
-                    ob.el.style.left = '100%';
-                    ob.el.style.bottom = `${ob.y}px`;
-                    board.appendChild(ob.el);
-                    obs.push(ob);
-                    lastT = time;
-                }
-
-                let hit = false;
-                obs = obs.filter(o => {
-                    o.x -= o.spd;
-                    o.el.style.left = `${o.x}%`;
-                    
-                    const pLeft=10, pRight=20;
-                    const pBottom = py*2.5;
-                    const pTop = pBottom + (sliding ? 25 : 45); 
-                    const oLeft=o.x, oRight=o.x+8;
-                    const oBottom=o.y, oTop=o.y+30;
-
-                    if(oLeft < pRight && oRight > pLeft && !(pBottom > oTop || pTop < oBottom)) hit = true;
-                    if(o.x < -10) { o.el.remove(); return false; }
-                    return true;
-                });
-
                 if(hit) {
-                    play=false; over=true;
-                    pEl.innerHTML = '<span class="absolute inline-block transform -translate-x-12 rotate-[120deg] opacity-60 text-3xl">🚲</span><span class="inline-block transform translate-x-6 rotate-[100deg] text-4xl">😵</span>';
-                    pEl.style.transform = `translateY(0px)`;
-                    
+                    play = false; over = true;
                     document.getElementById('bj-ov').classList.remove('hidden');
-                    document.getElementById('bj-msg').textContent = '💥 미끄러졌다!';
+                    document.getElementById('bj-msg').textContent = '💥 으악!';
                     document.getElementById('bj-msg').classList.remove('hidden');
                     document.getElementById('bj-st').textContent = '다시타기';
-                } else reqId = requestAnimationFrame(loop);
+                }
+
+                renderer.render(scene, camera);
+                reqId = requestAnimationFrame(loop);
             };
 
             document.getElementById('bj-st').addEventListener('click', (e) => { e.stopPropagation(); start(); });
@@ -2291,8 +2418,13 @@
             document.getElementById('bj-btn-slide').addEventListener('mousedown', (e)=>{e.preventDefault(); doSlide();});
             document.getElementById('bj-btn-slide').addEventListener('touchstart', (e)=>{e.preventDefault(); doSlide();}, {passive:false});
 
-            board.addEventListener('mousedown', (e)=>{ if(e.target.tagName!=='BUTTON') doJump(); });
-            board.addEventListener('touchstart', (e)=>{ if(e.target.tagName!=='BUTTON') doJump(); }, {passive:true});
+            const handleTouch = (e) => {
+                if(e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
+                e.preventDefault(); 
+                doJump(); 
+            };
+            canvasContainer.addEventListener('mousedown', handleTouch);
+            canvasContainer.addEventListener('touchstart', handleTouch, {passive:false});
 
             const keydown = (e) => {
                 if(!play) return;
@@ -2301,8 +2433,29 @@
                 if(e.code==='ArrowDown') doSlide();
             };
             window.addEventListener('keydown', keydown);
+            
+            const resizeObs = new ResizeObserver(() => {
+                if(canvasContainer.clientWidth === 0) return;
+                camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+                renderer.render(scene, camera);
+            });
+            resizeObs.observe(canvasContainer);
+            renderer.render(scene, camera);
 
-            return () => { cancelAnimationFrame(reqId); window.removeEventListener('keydown', keydown); };
+            return () => { 
+                cancelAnimationFrame(reqId); 
+                window.removeEventListener('keydown', keydown);
+                canvasContainer.removeEventListener('mousedown', handleTouch);
+                canvasContainer.removeEventListener('touchstart', handleTouch);
+                resizeObs.disconnect();
+                renderer.dispose();
+                scene.traverse(obj => {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) obj.material.dispose();
+                });
+            };
         };
 
         // ==========================================
