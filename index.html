@@ -39,7 +39,7 @@
                 <i data-lucide="gamepad-2" class="w-12 h-12 text-indigo-500"></i>
                 하시 게임
             </h1>
-            <p class="text-gray-500 text-lg">심심할 때 즐기는 22가지 꿀잼 미니게임 모음집!</p>
+            <p class="text-gray-500 text-lg">심심할 때 즐기는 23가지 꿀잼 미니게임 모음집!</p>
         </header>
 
         <div id="games-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -47,7 +47,7 @@
         </div>
         
         <div class="mt-12 text-center text-gray-400 text-sm flex flex-col gap-2">
-            <span>v2.2</span>
+            <span>v2.3 (HTML/Vanilla JS) • 모바일 & PC 완벽 지원</span>
             <span>&copy; 2026. 하시소프트웨어. All rights reserved.</span>
         </div>
     </div>
@@ -1405,7 +1405,7 @@
             dirLight.position.set(10, 20, 10);
             scene.add(dirLight);
             
-            const roadGeo = new THREE.PlaneGeometry(12, 200);
+            const roadGeo = new THREE.PlaneGeometry(24, 300);
             const roadMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
             const road = new THREE.Mesh(roadGeo, roadMat);
             road.rotation.x = -Math.PI / 2;
@@ -1518,6 +1518,10 @@
                 playerCar.rotation.y = (playerCar.position.x - targetX) * 0.05; 
                 playerCar.rotation.z = (playerCar.position.x - targetX) * 0.02; 
                 
+                // 카메라 부드러운 추적 (화면 밖으로 나가는 현상 방지)
+                camera.position.x += (playerCar.position.x * 0.6 - camera.position.x) * 0.1;
+                camera.lookAt(camera.position.x * 0.5, 0, -10);
+                
                 if (!finishLineObj && time - lastT > Math.max(400, 1500 - score * 0.2)) {
                     const isRock = Math.random() > 0.5;
                     let obsMesh;
@@ -1615,7 +1619,12 @@
             };
             
             document.getElementById('rc-st').addEventListener('click', start);
-            const mv = (d) => { if(play) targetX = Math.max(-3.5, Math.min(3.5, targetX + d * 3.5)); }; 
+            const mv = (d) => { 
+                if(play) {
+                    let currentLane = Math.round(targetX / 3.5);
+                    targetX = Math.max(-3.5, Math.min(3.5, (currentLane + d) * 3.5));
+                }
+            }; 
             document.getElementById('rc-left').addEventListener('click', () => mv(-1));
             document.getElementById('rc-right').addEventListener('click', () => mv(1));
             
@@ -1624,7 +1633,7 @@
                 const rect = canvasContainer.getBoundingClientRect();
                 const cx = e.touches ? e.touches[0].clientX : e.clientX;
                 const ratio = (cx - rect.left) / rect.width;
-                targetX = Math.max(-4.5, Math.min(4.5, (ratio - 0.5) * 9)); 
+                targetX = Math.max(-4.5, Math.min(4.5, (ratio - 0.5) * 10)); 
             };
             canvasContainer.addEventListener('touchmove', tmv, {passive:true});
             canvasContainer.addEventListener('mousemove', (e)=>{if(e.buttons===1)tmv(e);});
@@ -2196,9 +2205,9 @@
                     </div>
                     <div class="flex justify-center space-x-4 mt-6 w-full max-w-sm px-4">
                         <button id="bj-btn-jump" class="flex-1 bg-gray-200 p-4 rounded-xl flex items-center justify-center font-bold active:bg-gray-300 shadow-sm"><i data-lucide="arrow-up" class="mr-2"></i> 점프</button>
-                        <button id="bj-btn-slide" class="flex-1 bg-gray-200 p-4 rounded-xl flex items-center justify-center font-bold active:bg-gray-300 shadow-sm"><i data-lucide="arrow-down" class="mr-2"></i> 숙이기</button>
+                        <button id="bj-btn-slide" class="flex-1 bg-gray-200 p-4 rounded-xl flex items-center justify-center font-bold active:bg-gray-300 shadow-sm"><i data-lucide="arrow-down" class="mr-2"></i> 슬라이딩</button>
                     </div>
-                    <p class="mt-4 text-sm text-gray-500 text-center">벽은 점프(위/스페이스), 새는 숙이기(아래)로 피해!</p>
+                    <p class="mt-4 text-sm text-gray-500 text-center">벽은 점프(위/스페이스), 새는 슬라이딩(아래)으로 피해!</p>
                 </div>
             `;
             lucide.createIcons();
@@ -2382,7 +2391,7 @@
                 playerBox.expandByScalar(-0.25); // 판정을 약간 널널하게 보정
                 
                 if (sliding) {
-                    playerBox.max.y = Math.min(playerBox.max.y, 1.2); // 숙일시 머리 판정을 강제로 낮춤 (새 피하기)
+                    playerBox.max.y = Math.min(playerBox.max.y, 1.2); // 슬라이딩 시 머리 판정을 강제로 낮춤 (새 피하기)
                 }
 
                 for(let i = obstacles.length - 1; i >= 0; i--) {
@@ -2459,6 +2468,250 @@
         };
 
         // ==========================================
+        // 23. 3D 오토바이 (3D Motorcycle)
+        // ==========================================
+        const mountMotorcycle = (container) => {
+            container.innerHTML = `
+                <div class="flex flex-col items-center w-full touch-none select-none">
+                    <div class="flex justify-between w-full max-w-sm px-4 mb-2 font-bold">
+                        <span class="text-orange-600">질주 점수: <span id="mt-score">0</span></span>
+                    </div>
+                    <div id="mt-board" class="relative bg-gray-800 w-full max-w-sm h-80 rounded-xl overflow-hidden border-4 border-gray-900 shadow-inner cursor-pointer">
+                        <div id="mt-canvas-container" class="absolute inset-0"></div>
+                        <div id="mt-ov" class="absolute inset-0 bg-black/50 flex flex-col items-center justify-center z-30 text-white">
+                            <p id="mt-msg" class="text-2xl font-bold mb-2 hidden">💥 쾅!</p>
+                            <p id="mt-final" class="mb-4 hidden"></p>
+                            <button id="mt-st" class="bg-orange-500 text-white px-6 py-2 rounded-full font-bold mt-2 shadow-lg">부릉부릉 출발!</button>
+                        </div>
+                    </div>
+                    <div class="flex justify-center space-x-8 mt-6 w-full">
+                        <button id="mt-left" class="bg-gray-200 p-4 rounded-xl flex-1 max-w-[100px] flex justify-center active:bg-gray-300 shadow-sm"><i data-lucide="chevron-left" class="w-8 h-8"></i></button>
+                        <button id="mt-right" class="bg-gray-200 p-4 rounded-xl flex-1 max-w-[100px] flex justify-center active:bg-gray-300 shadow-sm"><i data-lucide="chevron-right" class="w-8 h-8"></i></button>
+                    </div>
+                    <p class="mt-4 text-sm text-gray-500 text-center">좌우로 차들을 피하며 야간 고속도로를 질주해!</p>
+                </div>
+            `;
+            lucide.createIcons();
+
+            let play = false, score = 0, reqId;
+            let targetX = 0, lastT = 0, obstacles = [];
+
+            const canvasContainer = document.getElementById('mt-canvas-container');
+            const width = canvasContainer.clientWidth || 300;
+            const height = canvasContainer.clientHeight || 300;
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a); // 밤하늘 (어두운 색)
+            scene.fog = new THREE.Fog(0x0f172a, 20, 100);
+
+            const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 150);
+            camera.position.set(0, 4, 8);
+            camera.lookAt(0, 1, -10);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            canvasContainer.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 5);
+            scene.add(dirLight);
+
+            // 도로
+            const roadGeo = new THREE.PlaneGeometry(30, 300);
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+            const road = new THREE.Mesh(roadGeo, roadMat);
+            road.rotation.x = -Math.PI / 2;
+            scene.add(road);
+
+            // 가로등 효과
+            const lightPoles = [];
+            for (let i=0; i<10; i++) {
+                const poleGrp = new THREE.Group();
+                const poleGeo = new THREE.CylinderGeometry(0.1, 0.1, 4);
+                const poleMat = new THREE.MeshBasicMaterial({color: 0x555555});
+                const pole = new THREE.Mesh(poleGeo, poleMat);
+                pole.position.set(0, 2, 0);
+                const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.4), new THREE.MeshBasicMaterial({color: 0xffaa00}));
+                bulb.position.set(0.5, 4, 0);
+                poleGrp.add(pole); poleGrp.add(bulb);
+                poleGrp.position.set(-8.5, 0, -i*20);
+                scene.add(poleGrp);
+                lightPoles.push(poleGrp);
+            }
+
+            // 오토바이 3D 모델 생성
+            const createMoto = () => {
+                const moto = new THREE.Group();
+                const wGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.15, 16); wGeo.rotateZ(Math.PI/2);
+                const wMat = new THREE.MeshStandardMaterial({color: 0x111111, roughness:0.9});
+                const wF = new THREE.Mesh(wGeo, wMat); wF.position.set(0, 0.4, -1.2);
+                const wB = new THREE.Mesh(wGeo, wMat); wB.position.set(0, 0.4, 1.2);
+                moto.add(wF); moto.add(wB);
+
+                const bodyGeo = new THREE.BoxGeometry(0.6, 0.6, 2.2);
+                const bodyMat = new THREE.MeshStandardMaterial({color: 0xea580c});
+                const body = new THREE.Mesh(bodyGeo, bodyMat); body.position.set(0, 0.7, 0);
+                moto.add(body);
+
+                // 라이더
+                const riderGrp = new THREE.Group();
+                const rBody = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1, 0.6), new THREE.MeshStandardMaterial({color: 0x1e293b}));
+                rBody.position.set(0, 1.2, 0.2); rBody.rotation.x = Math.PI/6;
+                const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), new THREE.MeshStandardMaterial({color: 0xffffff}));
+                helmet.position.set(0, 1.7, -0.2);
+                riderGrp.add(rBody); riderGrp.add(helmet);
+                moto.add(riderGrp);
+
+                // 전조등 느낌 광원
+                const headLight = new THREE.PointLight(0xffffee, 1.5, 50);
+                headLight.position.set(0, 0.8, -1.2);
+                moto.add(headLight);
+
+                return moto;
+            };
+
+            const playerMoto = createMoto();
+            scene.add(playerMoto);
+
+            // 차선 구분선
+            const lines = [];
+            for(let i=0; i<15; i++) {
+                [-2.5, 2.5].forEach(lx => {
+                    const l = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 2), new THREE.MeshBasicMaterial({color:0xffffff}));
+                    l.rotation.x = -Math.PI/2; l.position.set(lx, 0.01, -i*8);
+                    scene.add(l); lines.push(l);
+                });
+            }
+
+            const start = () => {
+                play=true; score=0; targetX=0; lastT=performance.now();
+                playerMoto.position.set(0,0,3); playerMoto.rotation.set(0,0,0);
+                document.getElementById('mt-score').textContent = 0;
+                document.getElementById('mt-ov').classList.add('hidden');
+                obstacles.forEach(o=>scene.remove(o.mesh)); obstacles=[];
+                reqId = requestAnimationFrame(loop);
+            };
+
+            const loop = (time) => {
+                if(!play) return;
+                score++;
+                if(score%5===0) document.getElementById('mt-score').textContent = Math.floor(score/5);
+
+                const speed = 0.8 + (score * 0.0002);
+
+                // 배경 애니메이션 스크롤링
+                lines.forEach(l => { l.position.z += speed; if(l.position.z > 10) l.position.z -= 120; });
+                lightPoles.forEach(p => { p.position.z += speed; if(p.position.z > 10) p.position.z -= 200; });
+
+                // 오토바이 눕기 물리엔진 (Lean)
+                playerMoto.position.x += (targetX - playerMoto.position.x) * 0.2;
+                playerMoto.rotation.z = (targetX - playerMoto.position.x) * -0.15; 
+                playerMoto.rotation.y = (playerMoto.position.x - targetX) * 0.05;
+
+                // 카메라가 플레이어를 부드럽게 따라감 (화면 밖으로 나가지 않게 방지)
+                camera.position.x += (playerMoto.position.x * 0.7 - camera.position.x) * 0.1;
+                camera.lookAt(camera.position.x * 0.5, 1, -10);
+
+                // 자동차(장애물) 스폰
+                if(time - lastT > Math.max(300, 1000 - score*0.1)) {
+                    const obsMesh = new THREE.Group();
+                    const carBody = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 4.5), new THREE.MeshStandardMaterial({color: Math.random()>0.5?0xffffff:0x333333}));
+                    carBody.position.y = 0.5;
+                    const tail = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.2, 0.1), new THREE.MeshBasicMaterial({color:0xff0000}));
+                    tail.position.set(0, 0.5, 2.26);
+                    obsMesh.add(carBody); obsMesh.add(tail);
+
+                    const lanes = [-5, 0, 5];
+                    obsMesh.position.set(lanes[Math.floor(Math.random()*3)], 0, -100);
+                    scene.add(obsMesh);
+                    obstacles.push({mesh: obsMesh, speed: speed * 0.4}); // 차들은 나보다 느림
+                    lastT = time;
+                }
+
+                let hit = false;
+                const pBox = new THREE.Box3().setFromObject(playerMoto);
+                pBox.expandByScalar(-0.2);
+
+                for(let i=obstacles.length-1; i>=0; i--) {
+                    let obs = obstacles[i];
+                    obs.mesh.position.z += (speed - obs.speed); 
+
+                    const oBox = new THREE.Box3().setFromObject(obs.mesh);
+                    oBox.expandByScalar(-0.2);
+                    if(pBox.intersectsBox(oBox)) hit = true;
+
+                    if(obs.mesh.position.z > 15) {
+                        scene.remove(obs.mesh); obstacles.splice(i, 1);
+                    }
+                }
+
+                if(hit) {
+                    play=false;
+                    const ov = document.getElementById('mt-ov');
+                    ov.classList.remove('hidden','bg-black/50'); ov.classList.add('bg-black/80');
+                    document.getElementById('mt-msg').classList.remove('hidden');
+                    document.getElementById('mt-final').textContent = `달린 거리: ${Math.floor(score/5)}m`;
+                    document.getElementById('mt-final').classList.remove('hidden');
+                    document.getElementById('mt-st').textContent = '다시 달리기';
+                }
+
+                renderer.render(scene, camera);
+                if(play) reqId = requestAnimationFrame(loop);
+            };
+
+            document.getElementById('mt-st').addEventListener('click', (e) => { e.stopPropagation(); start(); });
+            const mv = (d) => { 
+                if(play) {
+                    let currentLane = Math.round(targetX / 5);
+                    targetX = Math.max(-5, Math.min(5, (currentLane + d) * 5));
+                }
+            };
+            document.getElementById('mt-left').addEventListener('click', () => mv(-1));
+            document.getElementById('mt-right').addEventListener('click', () => mv(1));
+
+            const tmv = (e) => {
+                if(!play) return;
+                const rect = canvasContainer.getBoundingClientRect();
+                const cx = e.touches ? e.touches[0].clientX : e.clientX;
+                const ratio = (cx - rect.left) / rect.width;
+                targetX = Math.max(-5.5, Math.min(5.5, (ratio - 0.5) * 14));
+            };
+            canvasContainer.addEventListener('touchmove', tmv, {passive:true});
+            canvasContainer.addEventListener('mousemove', (e)=>{if(e.buttons===1)tmv(e);});
+
+            const keydown = (e) => {
+                if(!play) return;
+                if(['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+                if(e.key === 'ArrowLeft') mv(-1);
+                if(e.key === 'ArrowRight') mv(1);
+            };
+            window.addEventListener('keydown', keydown);
+
+            const resizeObs = new ResizeObserver(() => {
+                if(canvasContainer.clientWidth === 0) return;
+                camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+                renderer.render(scene, camera);
+            });
+            resizeObs.observe(canvasContainer);
+            renderer.render(scene, camera);
+
+            return () => { 
+                cancelAnimationFrame(reqId); 
+                window.removeEventListener('keydown', keydown); 
+                resizeObs.disconnect();
+                renderer.dispose();
+                scene.traverse(obj => {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) obj.material.dispose();
+                });
+            };
+        };
+
+        // ==========================================
         // 메인 데이터 & 라우팅
         // ==========================================
         const GAMES = [
@@ -2484,6 +2737,7 @@
             { id: 'breakout', title: '벽돌 깨기', icon: 'layout-template', color: 'bg-rose-100 text-rose-700', mount: mountBreakout },
             { id: 'timing', title: '타이밍 맞추기', icon: 'crosshair', color: 'bg-indigo-100 text-indigo-700', mount: mountTiming },
             { id: 'bikejump', title: '픽시 자전거', icon: 'bike', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump },
+            { id: 'motorcycle', title: '오토바이 3D', icon: 'gauge', color: 'bg-orange-100 text-orange-700', mount: mountMotorcycle },
         ];
 
         function initMenu() {
