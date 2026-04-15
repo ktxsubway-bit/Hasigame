@@ -58,7 +58,7 @@
         </div>
         
         <div class="mt-12 text-center text-gray-400 text-sm flex flex-col gap-2">
-            <span>v2.5 (Cloud Sync) • 모바일 & PC 완벽 지원</span>
+            <span>v2.7 (GitHub Pages 완벽 호환) • 모바일 & PC 완벽 지원</span>
             <span>&copy; 2026. 하시소프트웨어. All rights reserved.</span>
         </div>
     </div>
@@ -105,52 +105,43 @@
             <textarea id="notice-input" class="w-full border-2 border-gray-200 rounded-lg p-3 mb-4 focus:outline-none focus:border-indigo-500 h-32 resize-none" placeholder="새로운 공지사항을 입력하세요"></textarea>
             <div class="flex justify-end space-x-2">
                 <button onclick="closeAdminEdit()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300">취소</button>
-                <button onclick="saveNotice()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700">저장 (로컬 임시)</button>
+                <button onclick="saveNotice()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700">저장 적용</button>
             </div>
         </div>
     </div>
 
+    <!-- ========================================== -->
+    <!-- 1. 기본 UI & 게임 로직 (가장 먼저 실행되어 멈추지 않음) -->
+    <!-- ========================================== -->
     <script>
-        // ==========================================
-        // 전역 변수 및 유틸리티
-        // ==========================================
-        let currentCleanup = null;
-        let isAdmin = false;
-        let currentNotice = "환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 Delete 키를 누르세요)";
+        window.currentNotice = "환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 Delete 키를 누르세요)";
+        window.isAdmin = false;
+        window.currentCleanup = null;
 
+        // 전체 화면 기능
         window.toggleFullScreen = () => {
             if (!document.fullscreenElement) {
-                if (document.documentElement.requestFullscreen) {
-                    document.documentElement.requestFullscreen().catch(err => console.log(err));
-                }
+                if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(e=>console.log(e));
             } else {
-                if (document.exitFullscreen) {
-                    document.exitFullscreen();
-                }
+                if (document.exitFullscreen) document.exitFullscreen();
             }
         };
 
         document.addEventListener('fullscreenchange', () => {
             const icon = document.getElementById('fs-icon-global');
-            if (document.fullscreenElement) {
-                icon.setAttribute('data-lucide', 'minimize');
-            } else {
-                icon.setAttribute('data-lucide', 'maximize');
-            }
+            if (document.fullscreenElement) icon.setAttribute('data-lucide', 'minimize');
+            else icon.setAttribute('data-lucide', 'maximize');
             lucide.createIcons();
         });
 
-        // ==========================================
-        // 관리자 기능 로직 (Tab -> Delete 키로 변경)
-        // ==========================================
+        // 관리자 로그인 기능 (Delete 키)
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Delete') {
                 const loginModal = document.getElementById('admin-login-modal');
                 const editModal = document.getElementById('admin-edit-modal');
-                
                 if (loginModal.classList.contains('hidden') && editModal.classList.contains('hidden')) {
                     e.preventDefault();
-                    if (!isAdmin) {
+                    if (!window.isAdmin) {
                         loginModal.classList.remove('hidden');
                         setTimeout(() => document.getElementById('admin-pw').focus(), 100);
                     } else {
@@ -173,7 +164,7 @@
         window.attemptAdminLogin = () => {
             const pw = document.getElementById('admin-pw').value;
             if (pw === 'homerunentry9917@gmail.com') {
-                isAdmin = true;
+                window.isAdmin = true;
                 window.closeAdminLogin();
                 document.getElementById('admin-edit-btn').classList.remove('hidden');
                 alert('인증 성공! 이제 공지사항을 수정할 수 있습니다.');
@@ -184,7 +175,7 @@
 
         window.openAdminEdit = () => {
             document.getElementById('admin-edit-modal').classList.remove('hidden');
-            document.getElementById('notice-input').value = currentNotice;
+            document.getElementById('notice-input').value = window.currentNotice;
             setTimeout(() => document.getElementById('notice-input').focus(), 100);
         };
 
@@ -192,18 +183,18 @@
             document.getElementById('admin-edit-modal').classList.add('hidden');
         };
 
+        // 로컬 임시 저장소 함수 (나중에 아래 Firebase 모듈에서 덮어씌워짐)
         window.saveNotice = () => {
             const inputVal = document.getElementById('notice-input').value;
             if(inputVal.trim() !== '') {
-                currentNotice = inputVal;
-                document.getElementById('notice-marquee').textContent = currentNotice;
+                window.currentNotice = inputVal;
+                document.getElementById('notice-marquee').textContent = window.currentNotice;
+                alert("임시 저장 완료! (새로고침하면 날아갑니다. 클라우드 영구 저장을 원하면 HTML 파일 하단의 Firebase 설정을 채워주세요!)");
             }
             window.closeAdminEdit();
         };
 
-        // ==========================================
-        // 1. 가위바위보 (RPS)
-        // ==========================================
+        // 개별 게임 로직들
         const mountRps = (container) => {
             const choices = ['가위', '바위', '보'];
             const emojis = { '가위': '✌️', '바위': '✊', '보': '🖐️' };
@@ -233,13 +224,11 @@
                 document.getElementById('rps-computer').textContent = emojis[compChoice];
 
                 let resText = '';
-                if (choice === compChoice) {
-                    resText = '비겼다!'; score.draw++;
-                } else if ((choice === '가위' && compChoice === '보') || (choice === '바위' && compChoice === '가위') || (choice === '보' && compChoice === '바위')) {
+                if (choice === compChoice) { resText = '비겼다!'; score.draw++; } 
+                else if ((choice === '가위' && compChoice === '보') || (choice === '바위' && compChoice === '가위') || (choice === '보' && compChoice === '바위')) {
                     resText = '이겼다!! 🎉'; score.win++;
-                } else {
-                    resText = '졌다... 😢'; score.lose++;
-                }
+                } else { resText = '졌다... 😢'; score.lose++; }
+                
                 document.getElementById('rps-result').textContent = resText;
                 document.getElementById('rps-win').textContent = score.win;
                 document.getElementById('rps-draw').textContent = score.draw;
@@ -249,25 +238,17 @@
             container.querySelectorAll('.rps-btn').forEach(btn => {
                 btn.addEventListener('click', (e) => play(e.currentTarget.dataset.choice));
             });
-
             return () => {};
         };
 
-        // ==========================================
-        // 2. 숫자 야구 (Number Baseball)
-        // ==========================================
         const mountBaseball = (container) => {
-            let secret = [];
-            let guesses = [];
-            let gameOver = false;
+            let secret = [], guesses = [], gameOver = false;
 
             const genSecret = () => {
-                let nums = [0,1,2,3,4,5,6,7,8,9];
-                let res = [];
+                let nums = [0,1,2,3,4,5,6,7,8,9], res = [];
                 for(let i=0; i<3; i++) {
                     let idx = Math.floor(Math.random()*nums.length);
-                    res.push(nums[idx]);
-                    nums.splice(idx, 1);
+                    res.push(nums[idx]); nums.splice(idx, 1);
                 }
                 if(res[0] === 0) return genSecret();
                 return res;
@@ -304,11 +285,9 @@
             input.addEventListener('input', (e) => {
                 let val = e.target.value.replace(/[^0-9]/g, '').slice(0, 3);
                 input.value = val;
-                
                 let unique = new Set(val).size === val.length;
                 if(val.length > 0 && !unique) err.textContent = '서로 다른 숫자를 입력해줘!';
                 else err.textContent = '';
-
                 submitBtn.disabled = val.length !== 3 || !unique || gameOver;
             });
 
@@ -325,55 +304,34 @@
                 });
 
                 guesses.unshift({ val, strike, ball });
-                input.value = '';
-                submitBtn.disabled = true;
+                input.value = ''; submitBtn.disabled = true;
                 
                 renderList();
                 if(strike === 3) {
-                    gameOver = true;
-                    input.disabled = true;
-                    overDiv.classList.remove('hidden');
+                    gameOver = true; input.disabled = true; overDiv.classList.remove('hidden');
                 }
             });
 
             document.getElementById('bb-restart').addEventListener('click', () => {
-                secret = genSecret();
-                guesses = [];
-                gameOver = false;
-                input.disabled = false;
-                input.value = '';
-                err.textContent = '';
-                overDiv.classList.add('hidden');
-                renderList();
+                secret = genSecret(); guesses = []; gameOver = false;
+                input.disabled = false; input.value = ''; err.textContent = '';
+                overDiv.classList.add('hidden'); renderList();
             });
 
             function renderList() {
-                if(guesses.length === 0) {
-                    listDiv.innerHTML = `<div class="text-center text-gray-400 py-4">아직 시도한 기록이 없어.</div>`;
-                    return;
-                }
+                if(guesses.length === 0) { listDiv.innerHTML = `<div class="text-center text-gray-400 py-4">아직 시도한 기록이 없어.</div>`; return; }
                 listDiv.innerHTML = guesses.map(g => `
                     <div class="flex justify-between items-center p-2 border-b last:border-0">
                         <span class="text-lg font-mono tracking-widest">${g.val}</span>
-                        <span class="font-bold text-sm">
-                            <span class="text-red-500">${g.strike}S</span> <span class="text-blue-500">${g.ball}B</span>
-                        </span>
+                        <span class="font-bold text-sm"><span class="text-red-500">${g.strike}S</span> <span class="text-blue-500">${g.ball}B</span></span>
                     </div>
                 `).join('');
             }
-
             return () => {};
         };
 
-        // ==========================================
-        // 3. 먹이 줍기 (Gather Food)
-        // ==========================================
         const mountGather = (container) => {
-            let px = 0, py = 0;
-            let fx = 5, fy = 5;
-            let score = 0, timeLeft = 30;
-            let isPlaying = false;
-            let timer = null;
+            let px = 0, py = 0, fx = 5, fy = 5, score = 0, timeLeft = 30, isPlaying = false, timer = null;
             const size = 10;
 
             container.innerHTML = `
@@ -390,9 +348,7 @@
                         <div id="gf-grid" class="w-full h-full relative"></div>
                     </div>
                     <div class="grid grid-cols-3 gap-2 mt-6 w-48">
-                        <div></div>
-                        <button id="gf-up" class="bg-gray-200 p-4 rounded-lg flex justify-center active:bg-gray-300"><i data-lucide="chevron-up"></i></button>
-                        <div></div>
+                        <div></div><button id="gf-up" class="bg-gray-200 p-4 rounded-lg flex justify-center active:bg-gray-300"><i data-lucide="chevron-up"></i></button><div></div>
                         <button id="gf-left" class="bg-gray-200 p-4 rounded-lg flex justify-center active:bg-gray-300"><i data-lucide="chevron-left"></i></button>
                         <button id="gf-down" class="bg-gray-200 p-4 rounded-lg flex justify-center active:bg-gray-300"><i data-lucide="chevron-down"></i></button>
                         <button id="gf-right" class="bg-gray-200 p-4 rounded-lg flex justify-center active:bg-gray-300"><i data-lucide="chevron-right"></i></button>
@@ -408,17 +364,13 @@
                 
                 const pDiv = document.createElement('div');
                 pDiv.className = 'w-5 h-5 bg-blue-500 rounded-sm absolute transition-all duration-100';
-                pDiv.style.left = `${px * 27.2 + 3.6}px`;
-                pDiv.style.top = `${py * 27.2 + 3.6}px`;
+                pDiv.style.left = `${px * 27.2 + 3.6}px`; pDiv.style.top = `${py * 27.2 + 3.6}px`;
                 
                 const fDiv = document.createElement('div');
-                fDiv.className = 'text-xl absolute leading-none';
-                fDiv.textContent = '🍎';
-                fDiv.style.left = `${fx * 27.2 + 1}px`;
-                fDiv.style.top = `${fy * 27.2 + 1}px`;
+                fDiv.className = 'text-xl absolute leading-none'; fDiv.textContent = '🍎';
+                fDiv.style.left = `${fx * 27.2 + 1}px`; fDiv.style.top = `${fy * 27.2 + 1}px`;
 
-                grid.appendChild(fDiv);
-                grid.appendChild(pDiv);
+                grid.appendChild(fDiv); grid.appendChild(pDiv);
                 document.getElementById('gf-score').textContent = score;
                 document.getElementById('gf-time').textContent = `시간: ${timeLeft}s`;
                 if(timeLeft <= 5) document.getElementById('gf-time').classList.add('text-red-500');
@@ -427,12 +379,9 @@
 
             const move = (dx, dy) => {
                 if(!isPlaying) return;
-                px = Math.max(0, Math.min(size-1, px + dx));
-                py = Math.max(0, Math.min(size-1, py + dy));
+                px = Math.max(0, Math.min(size-1, px + dx)); py = Math.max(0, Math.min(size-1, py + dy));
                 if(px === fx && py === fy) {
-                    score++;
-                    fx = Math.floor(Math.random() * size);
-                    fy = Math.floor(Math.random() * size);
+                    score++; fx = Math.floor(Math.random() * size); fy = Math.floor(Math.random() * size);
                 }
                 draw();
             };
@@ -447,11 +396,9 @@
                 
                 clearInterval(timer);
                 timer = setInterval(() => {
-                    timeLeft--;
-                    draw();
+                    timeLeft--; draw();
                     if(timeLeft <= 0) {
-                        clearInterval(timer);
-                        isPlaying = false;
+                        clearInterval(timer); isPlaying = false;
                         document.getElementById('gf-overlay').classList.remove('hidden');
                         document.getElementById('gf-overtext').textContent = `게임 끝! 점수: ${score}`;
                         document.getElementById('gf-overtext').classList.remove('hidden');
@@ -468,10 +415,8 @@
 
             const keydown = (e) => {
                 if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
-                if(e.key === 'ArrowUp') move(0,-1);
-                if(e.key === 'ArrowDown') move(0,1);
-                if(e.key === 'ArrowLeft') move(-1,0);
-                if(e.key === 'ArrowRight') move(1,0);
+                if(e.key === 'ArrowUp') move(0,-1); if(e.key === 'ArrowDown') move(0,1);
+                if(e.key === 'ArrowLeft') move(-1,0); if(e.key === 'ArrowRight') move(1,0);
             };
             window.addEventListener('keydown', keydown);
             draw();
@@ -479,13 +424,8 @@
             return () => { window.removeEventListener('keydown', keydown); clearInterval(timer); };
         };
 
-        // ==========================================
-        // 4. 과일 받기 (Catch Fruit)
-        // ==========================================
         const mountFruit = (container) => {
-            let isPlaying = false, score = 0, missed = 0, playerX = 50;
-            let fruits = [];
-            let reqId = null, lastTime = 0;
+            let isPlaying = false, score = 0, missed = 0, playerX = 50, fruits = [], reqId = null, lastTime = 0;
 
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full touch-none">
@@ -497,7 +437,7 @@
                         <div id="cf-overlay" class="absolute inset-0 bg-black/30 flex flex-col items-center justify-center z-20 text-white">
                             <p id="cf-msg" class="text-2xl font-bold mb-2 hidden">게임 오버!</p>
                             <p id="cf-final" class="mb-4 hidden">최종 점수: 0</p>
-                            <button id="cf-btn" class="bg-indigo-50 px-6 py-3 rounded-full font-bold text-lg shadow-lg">시작하기</button>
+                            <button id="cf-btn" class="bg-indigo-500 px-6 py-3 rounded-full font-bold text-lg shadow-lg">시작하기</button>
                         </div>
                         <div id="cf-basket" class="absolute bottom-2 h-12 w-20 bg-amber-600 rounded-b-xl rounded-t flex items-center justify-center text-xl transform -translate-x-1/2 shadow-lg" style="left: 50%">🧺</div>
                     </div>
@@ -505,19 +445,16 @@
                         <button id="cf-left" class="bg-gray-200 p-4 rounded-xl flex-1 max-w-[100px] flex justify-center active:bg-gray-300"><i data-lucide="chevron-left" class="w-8 h-8"></i></button>
                         <button id="cf-right" class="bg-gray-200 p-4 rounded-xl flex-1 max-w-[100px] flex justify-center active:bg-gray-300"><i data-lucide="chevron-right" class="w-8 h-8"></i></button>
                     </div>
-                    <p class="mt-2 text-sm text-gray-500">PC: 화면 터치/드래그 또는 버튼</p>
                 </div>
             `;
             lucide.createIcons();
-            const board = document.getElementById('cf-board');
-            const basket = document.getElementById('cf-basket');
+            const board = document.getElementById('cf-board'), basket = document.getElementById('cf-basket');
 
             const start = () => {
                 isPlaying = true; score = 0; missed = 0; fruits = []; playerX = 50; lastTime = 0;
                 document.getElementById('cf-overlay').classList.add('hidden');
                 document.querySelectorAll('.cf-fruit').forEach(e => e.remove());
-                updateUI();
-                reqId = requestAnimationFrame(loop);
+                updateUI(); reqId = requestAnimationFrame(loop);
             };
 
             const updateUI = () => {
@@ -533,43 +470,32 @@
                     el.className = 'cf-fruit absolute text-3xl transform -translate-x-1/2';
                     el.textContent = ['🍎','🍌','🍇','🍉','🍓'][Math.floor(Math.random()*5)];
                     const x = Math.random() * 90 + 5;
-                    el.style.left = `${x}%`;
-                    el.style.top = `-10%`;
+                    el.style.left = `${x}%`; el.style.top = `-10%`;
                     board.appendChild(el);
                     fruits.push({ id: Math.random(), x, y: -10, el });
                     lastTime = time;
                 }
 
                 fruits = fruits.filter(f => {
-                    f.y += 1.5;
-                    f.el.style.top = `${f.y}%`;
-                    if(f.y >= 85 && f.y <= 95 && Math.abs(f.x - playerX) < 15) {
-                        score++; f.el.remove(); return false;
-                    }
-                    if(f.y > 100) {
-                        missed++; f.el.remove(); return false;
-                    }
+                    f.y += 1.5; f.el.style.top = `${f.y}%`;
+                    if(f.y >= 85 && f.y <= 95 && Math.abs(f.x - playerX) < 15) { score++; f.el.remove(); return false; }
+                    if(f.y > 100) { missed++; f.el.remove(); return false; }
                     return true;
                 });
-
                 updateUI();
 
                 if(missed >= 5) {
                     isPlaying = false;
                     const overlay = document.getElementById('cf-overlay');
-                    overlay.classList.remove('hidden', 'bg-black/30');
-                    overlay.classList.add('bg-black/60');
+                    overlay.classList.remove('hidden', 'bg-black/30'); overlay.classList.add('bg-black/60');
                     document.getElementById('cf-msg').classList.remove('hidden');
                     document.getElementById('cf-final').textContent = `최종 점수: ${score}`;
                     document.getElementById('cf-final').classList.remove('hidden');
                     document.getElementById('cf-btn').textContent = '다시하기';
-                } else {
-                    reqId = requestAnimationFrame(loop);
-                }
+                } else { reqId = requestAnimationFrame(loop); }
             };
 
             document.getElementById('cf-btn').addEventListener('click', start);
-            
             const move = (dir) => { if(isPlaying) { playerX = Math.max(5, Math.min(95, playerX + dir * 10)); updateUI(); } };
             document.getElementById('cf-left').addEventListener('click', () => move(-1));
             document.getElementById('cf-right').addEventListener('click', () => move(1));
@@ -577,8 +503,7 @@
             const tMove = (e) => {
                 if(!isPlaying) return;
                 const rect = board.getBoundingClientRect();
-                const touchX = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-                playerX = Math.max(5, Math.min(95, (touchX / rect.width) * 100));
+                playerX = Math.max(5, Math.min(95, ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) / rect.width * 100));
                 updateUI();
             };
             board.addEventListener('touchmove', tMove, {passive: true});
@@ -587,17 +512,13 @@
             const keydown = (e) => {
                 if(!isPlaying) return;
                 if(['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
-                if(e.key === 'ArrowLeft') move(-1);
-                if(e.key === 'ArrowRight') move(1);
+                if(e.key === 'ArrowLeft') move(-1); if(e.key === 'ArrowRight') move(1);
             };
             window.addEventListener('keydown', keydown);
 
             return () => { cancelAnimationFrame(reqId); window.removeEventListener('keydown', keydown); };
         };
 
-        // ==========================================
-        // 5. 틱택토 (Tic Tac Toe)
-        // ==========================================
         const mountTicTacToe = (container) => {
             let board = Array(9).fill(null), xNext = true, winner = null;
 
@@ -621,19 +542,14 @@
             const render = () => {
                 const grid = document.getElementById('ttt-grid');
                 grid.innerHTML = board.map((c, i) => `
-                    <button data-idx="${i}" class="ttt-cell w-20 h-20 bg-white rounded-lg text-4xl font-bold flex items-center justify-center hover:bg-gray-50 ${c==='X'?'text-blue-500':'text-red-500'}">
-                        ${c || ''}
-                    </button>
+                    <button data-idx="${i}" class="ttt-cell w-20 h-20 bg-white rounded-lg text-4xl font-bold flex items-center justify-center hover:bg-gray-50 ${c==='X'?'text-blue-500':'text-red-500'}">${c || ''}</button>
                 `).join('');
                 
                 grid.querySelectorAll('.ttt-cell').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const i = e.target.dataset.idx;
                         if(board[i] || winner) return;
-                        board[i] = xNext ? 'X' : 'O';
-                        xNext = !xNext;
-                        winner = calc(board);
-                        render();
+                        board[i] = xNext ? 'X' : 'O'; xNext = !xNext; winner = calc(board); render();
                     });
                 });
 
@@ -643,21 +559,13 @@
                 else stat.textContent = `다음 차례: ${xNext ? 'X' : 'O'}`;
             };
 
-            document.getElementById('ttt-rst').addEventListener('click', () => {
-                board.fill(null); xNext = true; winner = null; render();
-            });
-
-            render();
-            return () => {};
+            document.getElementById('ttt-rst').addEventListener('click', () => { board.fill(null); xNext = true; winner = null; render(); });
+            render(); return () => {};
         };
 
-        // ==========================================
-        // 6. 카드 짝맞추기 (Memory)
-        // ==========================================
         const mountMemory = (container) => {
             const base = ['🐶','🐱','🐭','🐹','🐰','🦊','🐻','🐼'];
-            let cards=[], flipped=[], solved=[], moves=0;
-            let locked = false;
+            let cards=[], flipped=[], solved=[], moves=0, locked = false;
 
             container.innerHTML = `
                 <div class="flex flex-col items-center">
@@ -693,14 +601,12 @@
                     const i = parseInt(e.currentTarget.dataset.idx);
                     if(flipped.includes(i) || solved.includes(i)) return;
                     
-                    flipped.push(i);
-                    render();
+                    flipped.push(i); render();
 
                     if(flipped.length === 2) {
                         locked = true; moves++;
                         if(cards[flipped[0]].e === cards[flipped[1]].e) {
-                            solved.push(...flipped);
-                            flipped = []; locked = false; render();
+                            solved.push(...flipped); flipped = []; locked = false; render();
                             if(solved.length === 16) {
                                 document.getElementById('mem-succ').classList.remove('hidden');
                                 document.getElementById('mem-rst').classList.remove('hidden');
@@ -713,17 +619,11 @@
             };
 
             document.getElementById('mem-rst').addEventListener('click', init);
-            init();
-            return () => {};
+            init(); return () => {};
         };
 
-        // ==========================================
-        // 7. 두더지 잡기 (Whack a Mole)
-        // ==========================================
         const mountWhack = (container) => {
-            let score=0, time=20, playing=false;
-            let moles = Array(9).fill(false);
-            let tGame, tMole;
+            let score=0, time=20, playing=false, moles = Array(9).fill(false), tGame, tMole;
 
             container.innerHTML = `
                 <div class="flex flex-col items-center select-none touch-none">
@@ -750,18 +650,14 @@
                     const hit = (e) => {
                         e.preventDefault();
                         const i = el.dataset.idx;
-                        if(playing && moles[i]) {
-                            score += 10; moles[i] = false; render();
-                        }
+                        if(playing && moles[i]) { score += 10; moles[i] = false; render(); }
                     };
-                    el.addEventListener('mousedown', hit);
-                    el.addEventListener('touchstart', hit, {passive:false});
+                    el.addEventListener('mousedown', hit); el.addEventListener('touchstart', hit, {passive:false});
                 });
             };
 
             const start = () => {
-                score=0; time=20; playing=true;
-                document.getElementById('wa-start').classList.add('hidden');
+                score=0; time=20; playing=true; document.getElementById('wa-start').classList.add('hidden');
                 
                 tMole = setInterval(() => {
                     moles.fill(false);
@@ -776,21 +672,16 @@
                         playing = false; moles.fill(false); render();
                         clearInterval(tMole); clearInterval(tGame);
                         const btn = document.getElementById('wa-start');
-                        btn.textContent = '다시 시작하기';
-                        btn.classList.remove('hidden');
+                        btn.textContent = '다시 시작하기'; btn.classList.remove('hidden');
                     }
                 }, 1000);
                 render();
             };
 
             document.getElementById('wa-start').addEventListener('click', start);
-            render();
-            return () => { clearInterval(tMole); clearInterval(tGame); };
+            render(); return () => { clearInterval(tMole); clearInterval(tGame); };
         };
 
-        // ==========================================
-        // 8. 반응속도 (Reaction)
-        // ==========================================
         const mountReaction = (container) => {
             let state = 'wait', startT = 0, tId = null;
             const msgs = { wait: '화면을 클릭하면 시작해!', ready: '초록색이 되면 누르세요!', now: '지금 클릭!!' };
@@ -806,30 +697,23 @@
                 </div>
             `;
 
-            const box = document.getElementById('rt-box');
-            const msg = document.getElementById('rt-msg');
-            const res = document.getElementById('rt-res');
+            const box = document.getElementById('rt-box'), msg = document.getElementById('rt-msg'), res = document.getElementById('rt-res');
 
             const setSt = (s) => {
-                state = s;
-                box.className = `w-full h-64 rounded-2xl border-4 flex flex-col items-center justify-center cursor-pointer p-4 text-center ${bgs[s]}`;
+                state = s; box.className = `w-full h-64 rounded-2xl border-4 flex flex-col items-center justify-center cursor-pointer p-4 text-center ${bgs[s]}`;
             };
 
             box.addEventListener('mousedown', (e) => {
                 e.preventDefault();
                 if(state === 'wait') {
                     setSt('ready'); msg.textContent = msgs.ready; res.classList.add('hidden');
-                    tId = setTimeout(() => {
-                        setSt('now'); msg.textContent = msgs.now; startT = Date.now();
-                    }, Math.floor(Math.random()*3000)+1500);
+                    tId = setTimeout(() => { setSt('now'); msg.textContent = msgs.now; startT = Date.now(); }, Math.floor(Math.random()*3000)+1500);
                 } else if(state === 'ready') {
-                    clearTimeout(tId);
-                    setSt('wait'); msg.textContent = '너무 일찍 눌렀어! 다시 클릭해.';
+                    clearTimeout(tId); setSt('wait'); msg.textContent = '너무 일찍 눌렀어! 다시 클릭해.';
                 } else if(state === 'now') {
                     let r = Date.now() - startT;
                     setSt('wait'); msg.textContent = '클릭해서 다시 시도해봐!';
-                    res.innerHTML = `${r} <span class="text-lg font-normal">ms</span>`;
-                    res.classList.remove('hidden');
+                    res.innerHTML = `${r} <span class="text-lg font-normal">ms</span>`; res.classList.remove('hidden');
                 }
             });
             box.addEventListener('touchstart', (e)=> { e.preventDefault(); box.dispatchEvent(new Event('mousedown')); }, {passive:false});
@@ -837,12 +721,8 @@
             return () => clearTimeout(tId);
         };
 
-        // ==========================================
-        // 9. 산수 퀴즈 (Math Quiz)
-        // ==========================================
         const mountMath = (container) => {
-            let score=0, time=30, playing=false, qAns=0;
-            let tId = null;
+            let score=0, time=30, playing=false, qAns=0, tId = null;
 
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full max-w-sm mx-auto">
@@ -865,12 +745,10 @@
             `;
 
             const genQ = () => {
-                const ops = ['+','-','*'];
-                const op = ops[Math.floor(Math.random()*3)];
+                const ops = ['+','-','*'], op = ops[Math.floor(Math.random()*3)];
                 let n1, n2;
                 if(op === '*') { n1 = Math.floor(Math.random()*9)+2; n2 = Math.floor(Math.random()*9)+2; }
                 else { n1 = Math.floor(Math.random()*50)+1; n2 = Math.floor(Math.random()*50)+1; if(op==='-' && n1<n2) [n1,n2]=[n2,n1]; }
-                
                 if(op==='+') qAns=n1+n2; else if(op==='-') qAns=n1-n2; else qAns=n1*n2;
                 document.getElementById('mq-q').textContent = `${n1} ${op==='*'?'×':op} ${n2} = ?`;
             };
@@ -880,16 +758,14 @@
                 document.getElementById('mq-score').textContent=0;
                 document.getElementById('mq-start-box').classList.add('hidden');
                 document.getElementById('mq-game-box').classList.remove('hidden');
-                document.getElementById('mq-in').value = '';
-                document.getElementById('mq-in').focus();
+                const inp = document.getElementById('mq-in'); inp.value = ''; inp.focus();
 
                 tId = setInterval(() => {
                     time--; document.getElementById('mq-time').textContent = time;
                     if(time <= 0) {
                         playing=false; clearInterval(tId);
                         document.getElementById('mq-game-box').classList.add('hidden');
-                        const sBox = document.getElementById('mq-start-box');
-                        sBox.classList.remove('hidden');
+                        document.getElementById('mq-start-box').classList.remove('hidden');
                         document.getElementById('mq-start-msg').textContent = `종료! 총 점수: ${score}점`;
                     }
                 }, 1000);
@@ -897,22 +773,16 @@
 
             document.getElementById('mq-start').addEventListener('click', start);
             document.getElementById('mq-form').addEventListener('submit', (e) => {
-                e.preventDefault();
-                if(!playing) return;
+                e.preventDefault(); if(!playing) return;
                 const inp = document.getElementById('mq-in');
                 if(parseInt(inp.value) === qAns) { score += 10; document.getElementById('mq-score').textContent = score; genQ(); }
                 inp.value = ''; inp.focus();
             });
-
             return () => clearInterval(tId);
         };
 
-        // ==========================================
-        // 10. 광클 게임 (Speed Clicker)
-        // ==========================================
         const mountClicker = (container) => {
-            let clk=0, time=10, playing=false, fin=false;
-            let tId = null;
+            let clk=0, time=10, playing=false, fin=false, tId = null;
 
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full touch-none select-none">
@@ -944,33 +814,23 @@
                         }
                     }, 1000);
                 }
-                if(playing) {
-                    clk++; document.getElementById('sc-clk').textContent = clk;
-                }
+                if(playing) { clk++; document.getElementById('sc-clk').textContent = clk; }
             };
 
-            btn.addEventListener('mousedown', hit);
-            btn.addEventListener('touchstart', hit, {passive:false});
+            btn.addEventListener('mousedown', hit); btn.addEventListener('touchstart', hit, {passive:false});
             
             document.getElementById('sc-rst').addEventListener('click', () => {
                 clk=0; time=10; playing=false; fin=false;
-                document.getElementById('sc-clk').textContent=0;
-                document.getElementById('sc-time').textContent=10;
-                btn.textContent='시작';
-                document.getElementById('sc-fin').classList.add('hidden');
+                document.getElementById('sc-clk').textContent=0; document.getElementById('sc-time').textContent=10;
+                btn.textContent='시작'; document.getElementById('sc-fin').classList.add('hidden');
             });
-
             return () => clearInterval(tId);
         };
 
-        // ==========================================
-        // 11. 테트리스 (Tetris)
-        // ==========================================
         const mountTetris = (container) => {
             const TET = [ {s:[[1,1,1,1]], c:'bg-cyan-400'}, {s:[[1,1],[1,1]], c:'bg-yellow-400'}, {s:[[0,1,0],[1,1,1]], c:'bg-purple-500'}, {s:[[0,1,1],[1,1,0]], c:'bg-green-500'}, {s:[[1,1,0],[0,1,1]], c:'bg-red-500'}, {s:[[1,0,0],[1,1,1]], c:'bg-blue-500'}, {s:[[0,0,1],[1,1,1]], c:'bg-orange-500'} ];
             const R=20, C=10;
-            let board = Array.from({length:R}, ()=>Array(C).fill(null)), piece=null, score=0, play=false, over=false;
-            let tId = null;
+            let board = Array.from({length:R}, ()=>Array(C).fill(null)), piece=null, score=0, play=false, over=false, tId = null;
 
             container.innerHTML = `
                 <div class="flex flex-col items-center touch-none">
@@ -1061,8 +921,7 @@
 
             document.getElementById('te-st').addEventListener('click', () => {
                 board = Array.from({length:R}, ()=>Array(C).fill(null)); score=0; over=false; play=true;
-                document.getElementById('te-score').textContent = 0;
-                document.getElementById('te-ov').classList.add('hidden');
+                document.getElementById('te-score').textContent = 0; document.getElementById('te-ov').classList.add('hidden');
                 piece = spawn(); render();
                 clearInterval(tId); tId = setInterval(()=>move(0,1), 700);
             });
@@ -1078,18 +937,12 @@
                 if(e.key==='ArrowUp') rot(); if(e.key==='ArrowDown') move(0,1);
                 if(e.key==='ArrowLeft') move(-1,0); if(e.key==='ArrowRight') move(1,0);
             };
-            window.addEventListener('keydown', key);
-            render();
-
+            window.addEventListener('keydown', key); render();
             return () => { window.removeEventListener('keydown', key); clearInterval(tId); };
         };
 
-        // ==========================================
-        // 12. 다른 색깔 찾기 (Color Finder)
-        // ==========================================
         const mountColor = (container) => {
-            let lv=1, time=15, play=false, score=0, ansIdx=0;
-            let tId = null;
+            let lv=1, time=15, play=false, score=0, ansIdx=0, tId = null;
 
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full touch-none">
@@ -1115,8 +968,7 @@
                 ansIdx = Math.floor(Math.random()*(gs*gs));
                 
                 const grid = document.getElementById('co-grid');
-                grid.style.gridTemplateColumns = `repeat(${gs}, minmax(0, 1fr))`;
-                grid.innerHTML = '';
+                grid.style.gridTemplateColumns = `repeat(${gs}, minmax(0, 1fr))`; grid.innerHTML = '';
                 for(let i=0; i<gs*gs; i++) {
                     const btn = document.createElement('button');
                     btn.className = 'rounded-md w-full h-full transition-transform active:scale-95';
@@ -1151,13 +1003,9 @@
                     }
                 }, 1000);
             });
-
             return () => clearInterval(tId);
         };
 
-        // ==========================================
-        // 13. 패턴 기억 (Simon Says)
-        // ==========================================
         const mountSimon = (container) => {
             let seq=[], pSeq=[], play=false, show=false, score=0;
             const colors = ['bg-red-500','bg-green-500','bg-blue-500','bg-yellow-400'];
@@ -1203,16 +1051,13 @@
 
             document.getElementById('sm-st').addEventListener('click', () => {
                 score=0; play=true; seq=[]; document.getElementById('sm-score').textContent=0;
-                document.getElementById('sm-ov').classList.add('hidden');
-                next();
+                document.getElementById('sm-ov').classList.add('hidden'); next();
             });
 
             btns.forEach(btn => btn.addEventListener('mousedown', (e) => {
-                e.preventDefault();
-                if(!play || show) return;
+                e.preventDefault(); if(!play || show) return;
                 const i = parseInt(btn.dataset.idx);
-                light(i, 200);
-                pSeq.push(i);
+                light(i, 200); pSeq.push(i);
                 if(seq[pSeq.length-1] !== i) {
                     play=false;
                     const ov = document.getElementById('sm-ov');
@@ -1229,13 +1074,8 @@
             return () => {};
         };
 
-        // ==========================================
-        // 14. 점프점프 (Dino Jump)
-        // ==========================================
         const mountJump = (container) => {
-            let play=false, score=0, over=false;
-            let dY=0, dVy=0, oX=100;
-            let reqId;
+            let play=false, score=0, over=false, dY=0, dVy=0, oX=100, reqId;
 
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full touch-none select-none">
@@ -1252,21 +1092,17 @@
                 </div>
             `;
 
-            const dino = document.getElementById('dj-dino');
-            const obs = document.getElementById('dj-obs');
-
+            const dino = document.getElementById('dj-dino'), obs = document.getElementById('dj-obs');
             const jump = () => { if(play && dY===0) dVy=6; };
 
             const loop = () => {
                 if(!play) return;
                 dY += dVy;
                 if(dY > 0) dVy -= 0.4; else { dY = 0; dVy = 0; }
-
                 oX -= 1.2 + (score*0.02);
                 if(oX < -10) { oX = 100 + Math.random()*100; score+=10; document.getElementById('dj-score').textContent = score; }
 
-                dino.style.transform = `translateY(-${dY*3}px)`;
-                obs.style.left = `${oX}%`;
+                dino.style.transform = `translateY(-${dY*3}px)`; obs.style.left = `${oX}%`;
 
                 if(oX < 20 && oX > 10 && dY < 10) {
                     play=false; over=true;
@@ -1280,38 +1116,21 @@
             };
 
             document.getElementById('dj-st').addEventListener('click', (e) => {
-                e.stopPropagation();
-                dY=0; dVy=0; oX=100; score=0; over=false; play=true;
-                document.getElementById('dj-score').textContent = 0;
-                document.getElementById('dj-ov').classList.add('hidden');
+                e.stopPropagation(); dY=0; dVy=0; oX=100; score=0; over=false; play=true;
+                document.getElementById('dj-score').textContent = 0; document.getElementById('dj-ov').classList.add('hidden');
                 reqId = requestAnimationFrame(loop);
             });
 
-            const handleTouch = (e) => {
-                if(e.target.tagName === 'BUTTON') return;
-                e.preventDefault(); 
-                jump(); 
-            };
-            container.addEventListener('mousedown', handleTouch);
-            container.addEventListener('touchstart', handleTouch, {passive:false});
-            
+            const handleTouch = (e) => { if(e.target.tagName === 'BUTTON') return; e.preventDefault(); jump(); };
+            container.addEventListener('mousedown', handleTouch); container.addEventListener('touchstart', handleTouch, {passive:false});
             const key = (e) => { if(e.code==='Space') { e.preventDefault(); jump(); } };
             window.addEventListener('keydown', key);
 
-            return () => { 
-                cancelAnimationFrame(reqId); 
-                window.removeEventListener('keydown', key);
-                container.removeEventListener('mousedown', handleTouch);
-                container.removeEventListener('touchstart', handleTouch);
-            };
+            return () => { cancelAnimationFrame(reqId); window.removeEventListener('keydown', key); container.removeEventListener('mousedown', handleTouch); container.removeEventListener('touchstart', handleTouch); };
         };
 
-        // ==========================================
-        // 15. 폭탄 피하기 (Avoid Bombs)
-        // ==========================================
         const mountBomb = (container) => {
-            let play=false, score=0, px=50, bombs=[];
-            let reqId, lastT=0;
+            let play=false, score=0, px=50, bombs=[], reqId, lastT=0;
 
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full touch-none">
@@ -1331,13 +1150,11 @@
                 </div>
             `;
             lucide.createIcons();
-            const board = document.getElementById('ab-board');
-            const player = document.getElementById('ab-player');
+            const board = document.getElementById('ab-board'), player = document.getElementById('ab-player');
 
             const start = () => {
                 score=0; px=50; bombs=[]; play=true; lastT=performance.now();
-                document.getElementById('ab-ov').classList.add('hidden');
-                document.querySelectorAll('.ab-bomb').forEach(e=>e.remove());
+                document.getElementById('ab-ov').classList.add('hidden'); document.querySelectorAll('.ab-bomb').forEach(e=>e.remove());
                 reqId = requestAnimationFrame(loop);
             };
 
@@ -1349,8 +1166,7 @@
                     const el = document.createElement('div');
                     el.className = 'ab-bomb absolute text-2xl transform -translate-x-1/2'; el.textContent = '💣';
                     const x = Math.random()*90+5; el.style.left = `${x}%`; el.style.top = '-10%';
-                    board.appendChild(el);
-                    bombs.push({ el, x, y:-10, spd: 1+Math.random()+(score*0.001) });
+                    board.appendChild(el); bombs.push({ el, x, y:-10, spd: 1+Math.random()+(score*0.001) });
                     lastT = time;
                 }
 
@@ -1384,23 +1200,17 @@
                 px = Math.max(5,Math.min(95, ((e.touches?e.touches[0].clientX:e.clientX)-rect.left)/rect.width*100));
                 player.style.left=`${px}%`;
             };
-            board.addEventListener('touchmove', tmv, {passive:true});
-            board.addEventListener('mousemove', (e)=>{if(e.buttons===1)tmv(e);});
+            board.addEventListener('touchmove', tmv, {passive:true}); board.addEventListener('mousemove', (e)=>{if(e.buttons===1)tmv(e);});
 
             const keydown = (e) => {
                 if(!play) return;
                 if(['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
-                if(e.key === 'ArrowLeft') mv(-1);
-                if(e.key === 'ArrowRight') mv(1);
+                if(e.key === 'ArrowLeft') mv(-1); if(e.key === 'ArrowRight') mv(1);
             };
             window.addEventListener('keydown', keydown);
-
             return () => { cancelAnimationFrame(reqId); window.removeEventListener('keydown', keydown); };
         };
 
-        // ==========================================
-        // 16. 단어 타자 (Typing Game)
-        // ==========================================
         const mountTyping = (container) => {
             const WORDS = ['강아지','고양이','햄스터','거북이','컴퓨터','스마트폰','키보드','마우스','모니터','사과','바나나','포도','딸기','수박','비행기','자동차','자전거','기차','지하철','대한민국','프로그래머','인공지능','자바스크립트','리액트'];
             let cw='', score=0, time=30, play=false, tId=null;
@@ -1426,8 +1236,7 @@
 
             const start = () => {
                 score=0; time=30; play=true; document.getElementById('tp-score').textContent=0;
-                document.getElementById('tp-st-box').classList.add('hidden');
-                document.getElementById('tp-gm-box').classList.remove('hidden');
+                document.getElementById('tp-st-box').classList.add('hidden'); document.getElementById('tp-gm-box').classList.remove('hidden');
                 const inp = document.getElementById('tp-in'); inp.value=''; inp.focus();
                 next();
                 tId = setInterval(() => {
@@ -1446,13 +1255,9 @@
                 if(!play) return;
                 if(e.target.value === cw) { score += cw.length*10; document.getElementById('tp-score').textContent=score; e.target.value=''; next(); }
             });
-
             return () => clearInterval(tId);
         };
 
-        // ==========================================
-        // 17. 3D 레이싱 (3D Racing)
-        // ==========================================
         const mountRacing = (container) => {
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full touch-none select-none">
@@ -1473,139 +1278,70 @@
             `;
             lucide.createIcons();
             
-            let play = false, score = 0, reqId;
-            let finishTime = 0, finishLineObj = null;
-            let lastT = 0;
-            let targetX = 0;
-            let obstacles = [];
-            
+            let play = false, score = 0, reqId, finishTime = 0, finishLineObj = null, lastT = 0, targetX = 0, obstacles = [];
             const canvasContainer = document.getElementById('rc-canvas-container');
-            const width = canvasContainer.clientWidth || 300;
-            const height = canvasContainer.clientHeight || 300;
+            const width = canvasContainer.clientWidth || 300, height = canvasContainer.clientHeight || 300;
             
             const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB); 
-            scene.fog = new THREE.Fog(0x87CEEB, 10, 80); 
-            
+            scene.background = new THREE.Color(0x87CEEB); scene.fog = new THREE.Fog(0x87CEEB, 10, 80); 
             const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);
-            camera.position.set(0, 5, 10);
-            camera.lookAt(0, 0, -10);
-            
-            const renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(width, height);
+            camera.position.set(0, 5, 10); camera.lookAt(0, 0, -10);
+            const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(width, height);
             canvasContainer.appendChild(renderer.domElement);
             
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.7);
-            scene.add(ambientLight);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5);
-            dirLight.position.set(10, 20, 10);
-            scene.add(dirLight);
+            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5); dirLight.position.set(10, 20, 10); scene.add(dirLight);
             
-            const roadGeo = new THREE.PlaneGeometry(24, 300); 
-            const roadMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
-            const road = new THREE.Mesh(roadGeo, roadMat);
-            road.rotation.x = -Math.PI / 2;
-            scene.add(road);
-
-            const grassGeo = new THREE.PlaneGeometry(200, 200);
-            const grassMat = new THREE.MeshStandardMaterial({ color: 0x3cb043 });
-            const grass = new THREE.Mesh(grassGeo, grassMat);
-            grass.rotation.x = -Math.PI / 2;
-            grass.position.y = -0.1;
-            scene.add(grass);
+            const road = new THREE.Mesh(new THREE.PlaneGeometry(24, 300), new THREE.MeshStandardMaterial({ color: 0x444444 }));
+            road.rotation.x = -Math.PI / 2; scene.add(road);
+            const grass = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x3cb043 }));
+            grass.rotation.x = -Math.PI / 2; grass.position.y = -0.1; scene.add(grass);
             
             const markers = [];
             for(let i=0; i<10; i++) {
-                const mGeo = new THREE.PlaneGeometry(0.4, 3);
-                const mMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-                const marker = new THREE.Mesh(mGeo, mMat);
-                marker.rotation.x = -Math.PI / 2;
-                marker.position.y = 0.01;
-                marker.position.z = -i * 10;
-                scene.add(marker);
-                markers.push(marker);
+                const marker = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 3), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+                marker.rotation.x = -Math.PI / 2; marker.position.set(0, 0.01, -i * 10);
+                scene.add(marker); markers.push(marker);
             }
             
             const createCarModel = (colorHex, isObstacle = false) => {
                 const car = new THREE.Group();
-                const chassisGeo = new THREE.BoxGeometry(0.8, 0.4, 4);
-                const chassisMat = new THREE.MeshStandardMaterial({ color: colorHex });
-                const chassis = new THREE.Mesh(chassisGeo, chassisMat);
-                chassis.position.y = 0.4;
-                car.add(chassis);
+                const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 4), new THREE.MeshStandardMaterial({ color: colorHex }));
+                chassis.position.y = 0.4; car.add(chassis);
+                const fWing = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 0.6), new THREE.MeshStandardMaterial({ color: colorHex }));
+                fWing.position.set(0, 0.3, -1.8); car.add(fWing);
+                const rWing = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 0.6), new THREE.MeshStandardMaterial({ color: colorHex }));
+                rWing.position.set(0, 0.9, 1.8); car.add(rWing);
+                const cockpit = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 1), new THREE.MeshStandardMaterial({ color: 0x111111 }));
+                cockpit.position.set(0, 0.7, 0.2); car.add(cockpit);
                 
-                const fWingGeo = new THREE.BoxGeometry(2.2, 0.1, 0.6);
-                const fWing = new THREE.Mesh(fWingGeo, chassisMat);
-                fWing.position.set(0, 0.3, -1.8);
-                car.add(fWing);
-
-                const rWingGeo = new THREE.BoxGeometry(2.2, 0.1, 0.6);
-                const rWing = new THREE.Mesh(rWingGeo, chassisMat);
-                rWing.position.set(0, 0.9, 1.8);
-                car.add(rWing);
-
-                const rSupportGeo = new THREE.BoxGeometry(0.1, 0.5, 0.4);
-                const rSupport1 = new THREE.Mesh(rSupportGeo, chassisMat);
-                rSupport1.position.set(-0.5, 0.6, 1.8);
-                car.add(rSupport1);
-                const rSupport2 = new THREE.Mesh(rSupportGeo, chassisMat);
-                rSupport2.position.set(0.5, 0.6, 1.8);
-                car.add(rSupport2);
-
-                const cockpitGeo = new THREE.BoxGeometry(0.6, 0.3, 1);
-                const cockpitMat = new THREE.MeshStandardMaterial({ color: 0x111111 });
-                const cockpit = new THREE.Mesh(cockpitGeo, cockpitMat);
-                cockpit.position.set(0, 0.7, 0.2);
-                car.add(cockpit);
-                
-                const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.4, 16);
-                wheelGeo.rotateZ(Math.PI / 2);
                 const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
                 const wPositions = [ [-1.2, 0.5, 1.3], [1.2, 0.5, 1.3], [-1.2, 0.5, -1.4], [1.2, 0.5, -1.4] ];
                 wPositions.forEach(pos => {
-                    const wheel = new THREE.Mesh(wheelGeo, wheelMat);
-                    wheel.position.set(pos[0], pos[1], pos[2]);
-                    car.add(wheel);
+                    const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.4, 16); wheelGeo.rotateZ(Math.PI / 2);
+                    const wheel = new THREE.Mesh(wheelGeo, wheelMat); wheel.position.set(pos[0], pos[1], pos[2]); car.add(wheel);
                 });
-                
-                const tailGeo = new THREE.BoxGeometry(0.2, 0.2, 0.1);
-                const tailMat = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                const tailLight = new THREE.Mesh(tailGeo, tailMat);
-                tailLight.position.set(0, 0.4, 2.01);
-                car.add(tailLight);
-                
                 if(isObstacle) car.rotation.y = Math.PI;
                 return car;
             };
 
-            const playerCar = createCarModel(0x3b82f6, false);
-            playerCar.position.set(0, 0, 5);
-            scene.add(playerCar);
+            const playerCar = createCarModel(0x3b82f6, false); playerCar.position.set(0, 0, 5); scene.add(playerCar);
             
             const start = () => {
                 score = 0; play = true; targetX = 0; playerCar.position.x = 0;
                 finishTime = performance.now() + 15000 + Math.random() * 15000;
-                
                 if (finishLineObj) { scene.remove(finishLineObj); finishLineObj = null; }
-                obstacles.forEach(o => scene.remove(o.mesh));
-                obstacles = [];
-                
+                obstacles.forEach(o => scene.remove(o.mesh)); obstacles = [];
                 document.getElementById('rc-ov').classList.add('hidden');
-                lastT = performance.now();
-                reqId = requestAnimationFrame(loop);
+                lastT = performance.now(); reqId = requestAnimationFrame(loop);
             };
             
             const loop = (time) => {
                 if (!play) return;
-                score++;
-                document.getElementById('rc-score').textContent = Math.floor(score / 5);
-                
+                score++; document.getElementById('rc-score').textContent = Math.floor(score / 5);
                 const speed = 0.5 + (score * 0.0001);
                 
-                markers.forEach(m => {
-                    m.position.z += speed;
-                    if (m.position.z > 10) m.position.z -= 90;
-                });
+                markers.forEach(m => { m.position.z += speed; if (m.position.z > 10) m.position.z -= 90; });
                 
                 playerCar.position.x += (targetX - playerCar.position.x) * 0.15;
                 playerCar.rotation.y = (playerCar.position.x - targetX) * 0.05; 
@@ -1617,92 +1353,60 @@
                 if (!finishLineObj && time - lastT > Math.max(400, 1500 - score * 0.2)) {
                     const isRock = Math.random() > 0.5;
                     let obsMesh;
-                    
                     if (isRock) {
-                        const obsGeo = new THREE.DodecahedronGeometry(1.2);
-                        const obsMat = new THREE.MeshStandardMaterial({ color: 0x888888 });
-                        obsMesh = new THREE.Mesh(obsGeo, obsMat);
+                        obsMesh = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2), new THREE.MeshStandardMaterial({ color: 0x888888 }));
                         obsMesh.position.y = 0.8;
-                    } else {
-                        obsMesh = createCarModel(0xef4444, true);
-                        obsMesh.position.y = 0;
-                    }
+                    } else { obsMesh = createCarModel(0xef4444, true); obsMesh.position.y = 0; }
                     
                     const lanes = [-3.5, 0, 3.5]; 
                     obsMesh.position.x = lanes[Math.floor(Math.random()*3)];
                     obsMesh.position.z = -80;
-                    scene.add(obsMesh);
-                    obstacles.push({ mesh: obsMesh, speedMod: isRock ? 1 : 1.3 }); 
+                    scene.add(obsMesh); obstacles.push({ mesh: obsMesh, speedMod: isRock ? 1 : 1.3 }); 
                     lastT = time;
                 }
                 
                 if (!finishLineObj && time > finishTime) {
                     const flGroup = new THREE.Group();
-                    const flGeo = new THREE.PlaneGeometry(24, 2);
-                    const flMat = new THREE.MeshBasicMaterial({ color: 0xffffff });
-                    const flMesh = new THREE.Mesh(flGeo, flMat);
-                    flMesh.rotation.x = -Math.PI / 2;
-                    flMesh.position.y = 0.02;
-                    flGroup.add(flMesh);
+                    const flMesh = new THREE.Mesh(new THREE.PlaneGeometry(24, 2), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+                    flMesh.rotation.x = -Math.PI / 2; flMesh.position.y = 0.02; flGroup.add(flMesh);
                     
                     const bannerGroup = new THREE.Group();
                     for(let i=0; i<12; i++) {
-                        const bMat = new THREE.MeshBasicMaterial({color: i%2===0 ? 0x000000 : 0xffffff});
-                        const bMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 0.5), bMat);
-                        bMesh.position.set(-11 + i*2, 3, 0);
-                        bannerGroup.add(bMesh);
+                        const bMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 0.5), new THREE.MeshBasicMaterial({color: i%2===0 ? 0x000000 : 0xffffff}));
+                        bMesh.position.set(-11 + i*2, 3, 0); bannerGroup.add(bMesh);
                     }
-                    flGroup.add(bannerGroup);
-                    flGroup.position.set(0, 0, -80);
-                    scene.add(flGroup);
-                    finishLineObj = flGroup;
+                    flGroup.add(bannerGroup); flGroup.position.set(0, 0, -80);
+                    scene.add(flGroup); finishLineObj = flGroup;
                 }
                 
                 let hit = false;
-                const playerBox = new THREE.Box3().setFromObject(playerCar);
-                playerBox.expandByScalar(-0.3); 
+                const playerBox = new THREE.Box3().setFromObject(playerCar); playerBox.expandByScalar(-0.3); 
                 
                 for(let i = obstacles.length - 1; i >= 0; i--) {
                     let obs = obstacles[i];
                     obs.mesh.position.z += speed * obs.speedMod;
-                    
-                    const obsBox = new THREE.Box3().setFromObject(obs.mesh);
-                    obsBox.expandByScalar(-0.2);
-                    
+                    const obsBox = new THREE.Box3().setFromObject(obs.mesh); obsBox.expandByScalar(-0.2);
                     if(playerBox.intersectsBox(obsBox)) hit = true;
-                    
-                    if(obs.mesh.position.z > 15) {
-                        scene.remove(obs.mesh);
-                        obstacles.splice(i, 1);
-                    }
+                    if(obs.mesh.position.z > 15) { scene.remove(obs.mesh); obstacles.splice(i, 1); }
                 }
                 
                 if (finishLineObj) {
                     finishLineObj.position.z += speed;
                     if (finishLineObj.position.z > playerCar.position.z) {
                         play = false;
-                        const ov = document.getElementById('rc-ov');
-                        ov.classList.remove('hidden', 'bg-black/50');
-                        ov.classList.add('bg-black/80');
-                        document.getElementById('rc-msg').textContent = '🏁 3D 완주 성공! 🎉';
-                        document.getElementById('rc-msg').classList.remove('hidden');
-                        document.getElementById('rc-final').textContent = `최종 점수: ${Math.floor(score/5)}`;
-                        document.getElementById('rc-final').classList.remove('hidden');
+                        const ov = document.getElementById('rc-ov'); ov.classList.remove('hidden', 'bg-black/50'); ov.classList.add('bg-black/80');
+                        document.getElementById('rc-msg').textContent = '🏁 3D 완주 성공! 🎉'; document.getElementById('rc-msg').classList.remove('hidden');
+                        document.getElementById('rc-final').textContent = `최종 점수: ${Math.floor(score/5)}`; document.getElementById('rc-final').classList.remove('hidden');
                         document.getElementById('rc-st').textContent = '다시하기';
-                        renderer.render(scene, camera);
-                        return;
+                        renderer.render(scene, camera); return;
                     }
                 }
                 
                 if (hit) {
                     play = false;
-                    const ov = document.getElementById('rc-ov');
-                    ov.classList.remove('hidden', 'bg-black/50');
-                    ov.classList.add('bg-black/80');
-                    document.getElementById('rc-msg').textContent = '💥 쾅!';
-                    document.getElementById('rc-msg').classList.remove('hidden');
-                    document.getElementById('rc-final').textContent = `최종 점수: ${Math.floor(score/5)}`;
-                    document.getElementById('rc-final').classList.remove('hidden');
+                    const ov = document.getElementById('rc-ov'); ov.classList.remove('hidden', 'bg-black/50'); ov.classList.add('bg-black/80');
+                    document.getElementById('rc-msg').textContent = '💥 쾅!'; document.getElementById('rc-msg').classList.remove('hidden');
+                    document.getElementById('rc-final').textContent = `최종 점수: ${Math.floor(score/5)}`; document.getElementById('rc-final').classList.remove('hidden');
                     document.getElementById('rc-st').textContent = '다시하기';
                 }
                 
@@ -1711,30 +1415,22 @@
             };
             
             document.getElementById('rc-st').addEventListener('click', start);
-            const mv = (d) => { 
-                if(play) {
-                    let currentLane = Math.round(targetX / 3.5);
-                    targetX = Math.max(-3.5, Math.min(3.5, (currentLane + d) * 3.5));
-                }
-            }; 
+            const mv = (d) => { if(play) { let currentLane = Math.round(targetX / 3.5); targetX = Math.max(-3.5, Math.min(3.5, (currentLane + d) * 3.5)); } }; 
             document.getElementById('rc-left').addEventListener('click', () => mv(-1));
             document.getElementById('rc-right').addEventListener('click', () => mv(1));
             
             const tmv = (e) => {
                 if(!play) return;
                 const rect = canvasContainer.getBoundingClientRect();
-                const cx = e.touches ? e.touches[0].clientX : e.clientX;
-                const ratio = (cx - rect.left) / rect.width;
+                const ratio = ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) / rect.width;
                 targetX = Math.max(-4.5, Math.min(4.5, (ratio - 0.5) * 10)); 
             };
-            canvasContainer.addEventListener('touchmove', tmv, {passive:true});
-            canvasContainer.addEventListener('mousemove', (e)=>{if(e.buttons===1)tmv(e);});
+            canvasContainer.addEventListener('touchmove', tmv, {passive:true}); canvasContainer.addEventListener('mousemove', (e)=>{if(e.buttons===1)tmv(e);});
             
             const keydown = (e) => {
                 if(!play) return;
                 if(['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
-                if(e.key === 'ArrowLeft') mv(-1);
-                if(e.key === 'ArrowRight') mv(1);
+                if(e.key === 'ArrowLeft') mv(-1); if(e.key === 'ArrowRight') mv(1);
             };
             window.addEventListener('keydown', keydown);
             
@@ -1742,28 +1438,16 @@
                 if(canvasContainer.clientWidth === 0) return;
                 camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
                 camera.updateProjectionMatrix();
-                renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
-                renderer.render(scene, camera);
+                renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight); renderer.render(scene, camera);
             });
-            resizeObs.observe(canvasContainer);
-            
-            renderer.render(scene, camera);
+            resizeObs.observe(canvasContainer); renderer.render(scene, camera);
             
             return () => { 
-                cancelAnimationFrame(reqId); 
-                window.removeEventListener('keydown', keydown); 
-                resizeObs.disconnect();
-                renderer.dispose();
-                scene.traverse(obj => {
-                    if (obj.geometry) obj.geometry.dispose();
-                    if (obj.material) obj.material.dispose();
-                });
+                cancelAnimationFrame(reqId); window.removeEventListener('keydown', keydown); resizeObs.disconnect(); renderer.dispose();
+                scene.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); if (obj.material) obj.material.dispose(); });
             };
         };
 
-        // ==========================================
-        // 18. 스네이크 & NPC (Snake with NPCs)
-        // ==========================================
         const mountSnake = (container) => {
             const SIZE = 20;
             let play=false, score=0, tId=null;
@@ -1791,9 +1475,7 @@
             lucide.createIcons();
             const grid = document.getElementById('sn-grid');
 
-            const spawnFood = () => {
-                food = { x: Math.floor(Math.random()*SIZE), y: Math.floor(Math.random()*SIZE) };
-            };
+            const spawnFood = () => { food = { x: Math.floor(Math.random()*SIZE), y: Math.floor(Math.random()*SIZE) }; };
 
             const draw = () => {
                 grid.innerHTML = '';
@@ -1875,17 +1557,12 @@
             const start = () => {
                 score=0; play=true; document.getElementById('sn-score').textContent=0;
                 player = [{x:10,y:10},{x:10,y:11},{x:10,y:12}]; pDir = {x:0,y:-1}; nextDir = {x:0,y:-1};
-                npcs = [
-                    { body: [{x:2,y:2},{x:2,y:3}], dir: {x:1,y:0} },
-                    { body: [{x:17,y:17},{x:18,y:17}], dir: {x:-1,y:0} }
-                ];
-                spawnFood(); draw();
-                document.getElementById('sn-ov').classList.add('hidden');
+                npcs = [ { body: [{x:2,y:2},{x:2,y:3}], dir: {x:1,y:0} }, { body: [{x:17,y:17},{x:18,y:17}], dir: {x:-1,y:0} } ];
+                spawnFood(); draw(); document.getElementById('sn-ov').classList.add('hidden');
                 clearInterval(tId); tId = setInterval(move, 150);
             };
 
             document.getElementById('sn-st').addEventListener('click', start);
-            
             const setD = (nx, ny) => { if(play && pDir.x !== -nx && pDir.y !== -ny) nextDir = {x:nx, y:ny}; };
             document.getElementById('sn-up').addEventListener('click', ()=>setD(0,-1));
             document.getElementById('sn-down').addEventListener('click', ()=>setD(0,1));
@@ -1903,9 +1580,6 @@
             return () => { clearInterval(tId); window.removeEventListener('keydown', keydown); };
         };
 
-        // ==========================================
-        // 19. 2048 (Puzzle)
-        // ==========================================
         const mount2048 = (container) => {
             let board = [], score = 0, play = false;
 
@@ -2040,9 +1714,6 @@
             return () => window.removeEventListener('keydown', keydown);
         };
 
-        // ==========================================
-        // 20. 벽돌 깨기 (Breakout)
-        // ==========================================
         const mountBreakout = (container) => {
             let play=false, reqId;
             let px=110, bx=140, by=200, vx=3, vy=-3;
@@ -2146,9 +1817,6 @@
             return () => cancelAnimationFrame(reqId);
         };
 
-        // ==========================================
-        // 21. 타이밍 맞추기 (Timing Game)
-        // ==========================================
         const mountTiming = (container) => {
             let play=false, score=0, reqId;
             let lineX=0, dir=1, speed=1.5, targetX=40, targetW=20;
@@ -2199,10 +1867,7 @@
             const loop = () => {
                 if(!play) return;
                 lineX += dir * speed;
-                if(lineX >= 100 || lineX <= 0) {
-                    dir *= -1;
-                    lineX = Math.max(0, Math.min(100, lineX));
-                }
+                if(lineX >= 100 || lineX <= 0) { dir *= -1; lineX = Math.max(0, Math.min(100, lineX)); }
                 line.style.left = `${lineX}%`;
                 reqId = requestAnimationFrame(loop);
             };
@@ -2212,27 +1877,18 @@
                 if(!play) return;
                 
                 if(lineX >= targetX && lineX <= targetX + targetW) {
-                    score++;
-                    document.getElementById('tm-score').textContent = score;
-                    
+                    score++; document.getElementById('tm-score').textContent = score;
                     board.classList.add('bg-green-200');
                     setTimeout(() => board.classList.remove('bg-green-200'), 100);
-                    
                     resetLevel();
                 } else {
-                    play = false;
-                    ov.classList.remove('hidden');
-                    msg.textContent = `실패! 최종 점수: ${score}`;
-                    msg.classList.remove('hidden');
+                    play = false; ov.classList.remove('hidden');
+                    msg.textContent = `실패! 최종 점수: ${score}`; msg.classList.remove('hidden');
                     stBtn.textContent = '다시하기';
                 }
             };
 
-            stBtn.addEventListener('click', (e) => {
-                e.stopPropagation(); 
-                start();
-            });
-
+            stBtn.addEventListener('click', (e) => { e.stopPropagation(); start(); });
             actionBtn.addEventListener('mousedown', doHit);
             actionBtn.addEventListener('touchstart', (e) => { e.preventDefault(); doHit(); }, {passive:false});
 
@@ -2245,23 +1901,13 @@
 
             const keydown = (e) => {
                 if(!play) return;
-                if(e.code === 'Space') {
-                    e.preventDefault();
-                    doHit();
-                }
+                if(e.code === 'Space') { e.preventDefault(); doHit(); }
             };
             window.addEventListener('keydown', keydown);
 
-            return () => { 
-                cancelAnimationFrame(reqId); 
-                window.removeEventListener('keydown', keydown); 
-                container.removeEventListener('mousedown', bgClick);
-            };
+            return () => { cancelAnimationFrame(reqId); window.removeEventListener('keydown', keydown); container.removeEventListener('mousedown', bgClick); };
         };
 
-        // ==========================================
-        // 22. 픽시 자전거 3D (Fixie Bike 3D)
-        // ==========================================
         const mountBikeJump = (container) => {
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full touch-none select-none">
@@ -2318,10 +1964,8 @@
             const lines = [];
             for(let i=0; i<8; i++) {
                 const lMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.1), new THREE.MeshBasicMaterial({color: 0x8b5a2b}));
-                lMesh.rotation.x = -Math.PI / 2;
-                lMesh.position.set(-15 + i*5, 0.01, 0);
-                scene.add(lMesh);
-                lines.push(lMesh);
+                lMesh.rotation.x = -Math.PI / 2; lMesh.position.set(-15 + i*5, 0.01, 0);
+                scene.add(lMesh); lines.push(lMesh);
             }
 
             const playerGrp = new THREE.Group();
@@ -2329,8 +1973,7 @@
             
             const bikeGrp = new THREE.Group();
             const wheelMat = new THREE.MeshStandardMaterial({color: 0x222222, roughness: 0.9});
-            const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.15, 16);
-            wheelGeo.rotateX(Math.PI/2);
+            const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.15, 16); wheelGeo.rotateX(Math.PI/2);
             const fWheel = new THREE.Mesh(wheelGeo, wheelMat); fWheel.position.set(1.2, 0, 0);
             const bWheel = new THREE.Mesh(wheelGeo, wheelMat); bWheel.position.set(-1.2, 0, 0);
             bikeGrp.add(fWheel); bikeGrp.add(bWheel);
@@ -2338,16 +1981,14 @@
             frame.position.set(0, 0.5, 0);
             const handlebar = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 0.1), new THREE.MeshStandardMaterial({color: 0xcccccc}));
             handlebar.position.set(0.9, 0.8, 0);
-            bikeGrp.add(frame); bikeGrp.add(handlebar);
-            playerGrp.add(bikeGrp);
+            bikeGrp.add(frame); bikeGrp.add(handlebar); playerGrp.add(bikeGrp);
 
             const riderGrp = new THREE.Group();
             const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.6), new THREE.MeshStandardMaterial({color: 0xef4444})); 
             body.position.set(0, 1.1, 0);
             const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({color: 0xffdebb})); 
             head.position.set(0, 1.9, 0);
-            riderGrp.add(body); riderGrp.add(head);
-            playerGrp.add(riderGrp);
+            riderGrp.add(body); riderGrp.add(head); playerGrp.add(riderGrp);
             
             scene.add(playerGrp);
             
@@ -2358,61 +1999,41 @@
 
             const start = () => {
                 score=0; py=0; vy=0; sliding=false; slideTimer=0; play=true; over=false; lastT=performance.now(); nextSpawnDelay=1500;
-                document.getElementById('bj-score').textContent = 0;
-                document.getElementById('bj-ov').classList.add('hidden');
+                document.getElementById('bj-score').textContent = 0; document.getElementById('bj-ov').classList.add('hidden');
                 
-                playerGrp.position.y = 0.5;
-                riderGrp.position.set(0, 0, 0); riderGrp.rotation.z = 0;
+                playerGrp.position.y = 0.5; riderGrp.position.set(0, 0, 0); riderGrp.rotation.z = 0;
                 bikeGrp.position.set(0, 0, 0); bikeGrp.rotation.z = 0;
                 
-                obstacles.forEach(o => scene.remove(o.mesh));
-                obstacles = [];
-                reqId = requestAnimationFrame(loop);
+                obstacles.forEach(o => scene.remove(o.mesh)); obstacles = []; reqId = requestAnimationFrame(loop);
             };
 
             const loop = (time) => {
                 const speed = 0.2 + (score * 0.0001); 
                 
                 if (over) {
-                    riderGrp.position.x += 0.15;
-                    riderGrp.position.y -= 0.05;
-                    riderGrp.rotation.z -= 0.1;
-                    bikeGrp.rotation.z += 0.05;
-                    bikeGrp.position.x -= 0.05;
-                    
+                    riderGrp.position.x += 0.15; riderGrp.position.y -= 0.05; riderGrp.rotation.z -= 0.1;
+                    bikeGrp.rotation.z += 0.05; bikeGrp.position.x -= 0.05;
                     renderer.render(scene, camera);
-                    if (riderGrp.position.y > -5) {
-                        reqId = requestAnimationFrame(loop); 
-                    }
+                    if (riderGrp.position.y > -5) reqId = requestAnimationFrame(loop); 
                     return;
                 }
 
                 if(!play) return;
 
-                lines.forEach(m => {
-                    m.position.x -= speed;
-                    if(m.position.x < -20) m.position.x += 40;
-                });
+                lines.forEach(m => { m.position.x -= speed; if(m.position.x < -20) m.position.x += 40; });
 
                 if(sliding) {
-                    slideTimer--;
-                    if(slideTimer <= 0) sliding = false;
-                    riderGrp.rotation.z = -Math.PI / 2.2; 
-                    riderGrp.position.y = -0.5;
-                    riderGrp.position.x = -0.4;
+                    slideTimer--; if(slideTimer <= 0) sliding = false;
+                    riderGrp.rotation.z = -Math.PI / 2.2; riderGrp.position.y = -0.5; riderGrp.position.x = -0.4;
                 } else {
-                    riderGrp.rotation.z = 0;
-                    riderGrp.position.y = 0;
-                    riderGrp.position.x = 0;
+                    riderGrp.rotation.z = 0; riderGrp.position.y = 0; riderGrp.position.x = 0;
                 }
 
                 py += vy;
-                if(py > 0) vy -= gravity;
-                else { py = 0; vy = 0; }
+                if(py > 0) vy -= gravity; else { py = 0; vy = 0; }
                 playerGrp.position.y = 0.5 + py;
 
-                fWheel.rotation.z -= speed * 2;
-                bWheel.rotation.z -= speed * 2;
+                fWheel.rotation.z -= speed * 2; bWheel.rotation.z -= speed * 2;
                 
                 score++;
                 if(score % 5 === 0) document.getElementById('bj-score').textContent = Math.floor(score/5);
@@ -2426,30 +2047,22 @@
                         bBody.rotation.z = Math.PI / 2;
                         const bWing = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 2), new THREE.MeshStandardMaterial({color: 0x111111}));
                         bWing.position.y = 0.2;
-                        obsMesh.add(bBody); obsMesh.add(bWing);
-                        obsMesh.position.set(15, 2.5, 0); 
+                        obsMesh.add(bBody); obsMesh.add(bWing); obsMesh.position.set(15, 2.5, 0); 
                     } else {
                         const wallGeo = new THREE.BoxGeometry(1, 1.4, 2);
                         const wallMat = new THREE.MeshStandardMaterial({color: 0xb91c1c}); 
                         const wall = new THREE.Mesh(wallGeo, wallMat);
-                        obsMesh.add(wall);
-                        obsMesh.position.set(15, 0.7, 0); 
+                        obsMesh.add(wall); obsMesh.position.set(15, 0.7, 0); 
                     }
                     
-                    scene.add(obsMesh);
-                    obstacles.push({ mesh: obsMesh });
-                    lastT = time;
-                    const baseDelay = Math.max(700, 1500 - score * 0.3);
-                    nextSpawnDelay = baseDelay + Math.random() * 1200; 
+                    scene.add(obsMesh); obstacles.push({ mesh: obsMesh }); lastT = time;
+                    nextSpawnDelay = Math.max(700, 1500 - score * 0.3) + Math.random() * 1200; 
                 }
 
                 let hit = false;
                 const playerBox = new THREE.Box3().setFromObject(playerGrp);
                 playerBox.expandByScalar(-0.25); 
-                
-                if (sliding) {
-                    playerBox.max.y = Math.min(playerBox.max.y, 1.2); 
-                }
+                if (sliding) playerBox.max.y = Math.min(playerBox.max.y, 1.2); 
 
                 for(let i = obstacles.length - 1; i >= 0; i--) {
                     let obs = obstacles[i];
@@ -2459,11 +2072,7 @@
                     obsBox.expandByScalar(-0.2);
                     
                     if(playerBox.intersectsBox(obsBox)) hit = true;
-
-                    if(obs.mesh.position.x < -15) {
-                        scene.remove(obs.mesh);
-                        obstacles.splice(i, 1);
-                    }
+                    if(obs.mesh.position.x < -15) { scene.remove(obs.mesh); obstacles.splice(i, 1); }
                 }
 
                 if(hit) {
@@ -2486,8 +2095,7 @@
 
             const handleTouch = (e) => {
                 if(e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
-                e.preventDefault(); 
-                doJump(); 
+                e.preventDefault(); doJump(); 
             };
             canvasContainer.addEventListener('mousedown', handleTouch);
             canvasContainer.addEventListener('touchstart', handleTouch, {passive:false});
@@ -2511,22 +2119,14 @@
             renderer.render(scene, camera);
 
             return () => { 
-                cancelAnimationFrame(reqId); 
-                window.removeEventListener('keydown', keydown);
+                cancelAnimationFrame(reqId); window.removeEventListener('keydown', keydown);
                 canvasContainer.removeEventListener('mousedown', handleTouch);
                 canvasContainer.removeEventListener('touchstart', handleTouch);
-                resizeObs.disconnect();
-                renderer.dispose();
-                scene.traverse(obj => {
-                    if (obj.geometry) obj.geometry.dispose();
-                    if (obj.material) obj.material.dispose();
-                });
+                resizeObs.disconnect(); renderer.dispose();
+                scene.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); if (obj.material) obj.material.dispose(); });
             };
         };
 
-        // ==========================================
-        // 23. 3D 오토바이 (3D Motorcycle)
-        // ==========================================
         const mountMotorcycle = (container) => {
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full touch-none select-none">
@@ -2758,9 +2358,6 @@
             };
         };
 
-        // ==========================================
-        // 메인 데이터 & 라우팅
-        // ==========================================
         const GAMES = [
             { id: 'tetris', title: '테트리스', icon: 'blocks', color: 'bg-indigo-100 text-indigo-600', mount: mountTetris },
             { id: 'baseball', title: '숫자 야구', icon: 'trophy', color: 'bg-orange-100 text-orange-600', mount: mountBaseball },
@@ -2787,22 +2384,21 @@
             { id: 'motorcycle', title: '오토바이 3D', icon: 'gauge', color: 'bg-orange-100 text-orange-700', mount: mountMotorcycle },
         ];
 
-        function initMenu() {
-            const grid = document.getElementById('games-grid');
-            GAMES.forEach(game => {
-                const btn = document.createElement('button');
-                btn.className = "bg-white p-6 rounded-2xl shadow-sm hover:shadow-md border border-gray-100 flex flex-col items-center justify-center transition-all hover:-translate-y-1 group";
-                btn.onclick = () => window.openGame(game.id);
-                btn.innerHTML = `
-                    <div class="p-4 rounded-2xl mb-4 ${game.color} group-hover:scale-110 transition-transform">
-                        <i data-lucide="${game.icon}" class="w-9 h-9"></i>
-                    </div>
-                    <h3 class="font-bold text-gray-700 text-lg">${game.title}</h3>
-                `;
-                grid.appendChild(btn);
-            });
-            lucide.createIcons();
-        }
+        // 메뉴 초기화
+        const grid = document.getElementById('games-grid');
+        GAMES.forEach(game => {
+            const btn = document.createElement('button');
+            btn.className = "bg-white p-6 rounded-2xl shadow-sm hover:shadow-md border border-gray-100 flex flex-col items-center justify-center transition-all hover:-translate-y-1 group";
+            btn.onclick = () => window.openGame(game.id);
+            btn.innerHTML = `
+                <div class="p-4 rounded-2xl mb-4 ${game.color} group-hover:scale-110 transition-transform">
+                    <i data-lucide="${game.icon}" class="w-9 h-9"></i>
+                </div>
+                <h3 class="font-bold text-gray-700 text-lg">${game.title}</h3>
+            `;
+            grid.appendChild(btn);
+        });
+        lucide.createIcons();
 
         window.openGame = (id) => {
             const game = GAMES.find(g => g.id === id);
@@ -2819,18 +2415,75 @@
 
             const container = document.getElementById('game-container');
             container.innerHTML = '';
-            currentCleanup = game.mount(container);
+            window.currentCleanup = game.mount(container);
         };
 
         window.closeGame = () => {
-            if(currentCleanup) { currentCleanup(); currentCleanup = null; }
+            if(window.currentCleanup) { window.currentCleanup(); window.currentCleanup = null; }
             document.getElementById('game-screen').classList.add('hidden');
             document.getElementById('menu-screen').classList.remove('hidden');
         };
+    </script>
 
-        // 앱 초기화
-        initMenu();
+    <!-- ========================================== -->
+    <!-- 2. 클라우드 연동 스크립트 (선택사항) -->
+    <!-- ========================================== -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
+        // 사용자가 제공한 파이어베이스 설정값 적용!
+        const firebaseConfig = {
+          apiKey: "AIzaSyA9CfIdZ0DNkvUdOk3-GlMlHV_FbAFNnGk",
+          authDomain: "hasi-game.firebaseapp.com",
+          projectId: "hasi-game",
+          storageBucket: "hasi-game.firebasestorage.app",
+          messagingSenderId: "48274416774",
+          appId: "1:48274416774:web:c15811462fc618ebdd9d07",
+          measurementId: "G-FT9MYSD4GW"
+        };
+
+        if (firebaseConfig.apiKey !== "") {
+            try {
+                const app = initializeApp(firebaseConfig);
+                const auth = getAuth(app);
+                const db = getFirestore(app);
+
+                const initAuth = async () => {
+                    await signInAnonymously(auth);
+                    const noticeRef = doc(db, 'hashigames', 'public', 'config', 'main_notice');
+                    
+                    // 1. 클라우드에서 실시간으로 공지 불러오기
+                    onSnapshot(noticeRef, (docSnap) => {
+                        if (docSnap.exists()) {
+                            window.currentNotice = docSnap.data().text;
+                            document.getElementById('notice-marquee').textContent = window.currentNotice;
+                        }
+                    });
+
+                    // 2. 기본 저장 함수를 클라우드 저장용으로 덮어쓰기
+                    window.saveNotice = async () => {
+                        const inputVal = document.getElementById('notice-input').value;
+                        if(inputVal.trim() !== '') {
+                            window.currentNotice = inputVal;
+                            document.getElementById('notice-marquee').textContent = window.currentNotice;
+                            try {
+                                await setDoc(noticeRef, { text: inputVal }, { merge: true });
+                                alert("클라우드 공지 저장 완료! (모든 사람에게 동기화됩니다)"); 
+                            } catch(e) {
+                                console.error(e);
+                                alert("저장 실패: Firebase 데이터베이스 보안 규칙(Rules)이 쓰기 허용 상태인지 확인하세요.");
+                            }
+                        }
+                        window.closeAdminEdit();
+                    };
+                };
+                initAuth();
+            } catch(e) {
+                console.error("Firebase 초기화 에러:", e);
+            }
+        }
     </script>
 </body>
-</html>
+    </html>
