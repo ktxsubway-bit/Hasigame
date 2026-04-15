@@ -47,7 +47,7 @@
             <div class="bg-indigo-100 border-l-4 border-indigo-500 p-4 rounded-r-xl flex justify-between items-center shadow-sm">
                 <div class="flex items-center w-full overflow-hidden">
                     <i data-lucide="megaphone" class="w-6 h-6 text-indigo-600 mr-3 shrink-0"></i>
-                    <marquee id="notice-marquee" class="text-indigo-900 font-bold text-lg" scrollamount="6">환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 TAB 키를 누르세요)</marquee>
+                    <marquee id="notice-marquee" class="text-indigo-900 font-bold text-lg" scrollamount="6">환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 Delete 키를 누르세요)</marquee>
                 </div>
                 <button id="admin-edit-btn" onclick="openAdminEdit()" class="hidden ml-4 shrink-0 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition shadow-md whitespace-nowrap">공지 수정</button>
             </div>
@@ -105,63 +105,18 @@
             <textarea id="notice-input" class="w-full border-2 border-gray-200 rounded-lg p-3 mb-4 focus:outline-none focus:border-indigo-500 h-32 resize-none" placeholder="새로운 공지사항을 입력하세요"></textarea>
             <div class="flex justify-end space-x-2">
                 <button onclick="closeAdminEdit()" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-bold hover:bg-gray-300">취소</button>
-                <button onclick="saveNotice()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700">저장 (클라우드 반영)</button>
+                <button onclick="saveNotice()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg font-bold hover:bg-indigo-700">저장 (로컬 임시)</button>
             </div>
         </div>
     </div>
 
-    <!-- type="module" 로 변경하여 클라우드 라이브러리 사용 -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // ==========================================
-        // 클라우드 데이터베이스 초기화
-        // ==========================================
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-        const initAuth = async () => {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("인증 실패:", error);
-            }
-        };
-        initAuth();
-
-        let currentNotice = "환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 TAB 키를 누르세요)";
-        let currentUser = null;
-
-        // 접속 시 실시간 공지사항 연동
-        onAuthStateChanged(auth, (user) => {
-            currentUser = user;
-            if (user) {
-                const noticeRef = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'main_notice');
-                onSnapshot(noticeRef, (docSnap) => {
-                    if (docSnap.exists()) {
-                        currentNotice = docSnap.data().text;
-                        document.getElementById('notice-marquee').textContent = currentNotice;
-                    }
-                }, (error) => {
-                    console.error("공지사항 동기화 오류:", error);
-                });
-            }
-        });
-
+    <script>
         // ==========================================
         // 전역 변수 및 유틸리티
         // ==========================================
         let currentCleanup = null;
         let isAdmin = false;
+        let currentNotice = "환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 Delete 키를 누르세요)";
 
         window.toggleFullScreen = () => {
             if (!document.fullscreenElement) {
@@ -186,14 +141,13 @@
         });
 
         // ==========================================
-        // 관리자 기능 로직
+        // 관리자 기능 로직 (Tab -> Delete 키로 변경)
         // ==========================================
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Tab') {
+            if (e.key === 'Delete') {
                 const loginModal = document.getElementById('admin-login-modal');
                 const editModal = document.getElementById('admin-edit-modal');
                 
-                // 모달이 둘 다 닫혀있을 때만 작동 (입력 폼에서 Tab 꼬임 방지)
                 if (loginModal.classList.contains('hidden') && editModal.classList.contains('hidden')) {
                     e.preventDefault();
                     if (!isAdmin) {
@@ -222,7 +176,6 @@
                 isAdmin = true;
                 window.closeAdminLogin();
                 document.getElementById('admin-edit-btn').classList.remove('hidden');
-                // 알림창 대신 화면에 텍스트로 살짝 보여주는 게 깔끔할 수 있지만, 요구사항대로 alert 유지
                 alert('인증 성공! 이제 공지사항을 수정할 수 있습니다.');
             } else {
                 document.getElementById('admin-error').classList.remove('hidden');
@@ -239,19 +192,11 @@
             document.getElementById('admin-edit-modal').classList.add('hidden');
         };
 
-        // 수정한 공지를 클라우드에 업로드
-        window.saveNotice = async () => {
+        window.saveNotice = () => {
             const inputVal = document.getElementById('notice-input').value;
             if(inputVal.trim() !== '') {
-                if (currentUser) {
-                    const noticeRef = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'main_notice');
-                    await setDoc(noticeRef, { text: inputVal });
-                    // 저장이 완료되면 onSnapshot이 반응하여 화면을 자동으로 업데이트함
-                } else {
-                    // 혹시 클라우드 연결이 안 되었을 때를 대비한 임시 로컬 처리
-                    currentNotice = inputVal;
-                    document.getElementById('notice-marquee').textContent = currentNotice;
-                }
+                currentNotice = inputVal;
+                document.getElementById('notice-marquee').textContent = currentNotice;
             }
             window.closeAdminEdit();
         };
@@ -552,7 +497,7 @@
                         <div id="cf-overlay" class="absolute inset-0 bg-black/30 flex flex-col items-center justify-center z-20 text-white">
                             <p id="cf-msg" class="text-2xl font-bold mb-2 hidden">게임 오버!</p>
                             <p id="cf-final" class="mb-4 hidden">최종 점수: 0</p>
-                            <button id="cf-btn" class="bg-indigo-500 px-6 py-3 rounded-full font-bold text-lg shadow-lg">시작하기</button>
+                            <button id="cf-btn" class="bg-indigo-50 px-6 py-3 rounded-full font-bold text-lg shadow-lg">시작하기</button>
                         </div>
                         <div id="cf-basket" class="absolute bottom-2 h-12 w-20 bg-amber-600 rounded-b-xl rounded-t flex items-center justify-center text-xl transform -translate-x-1/2 shadow-lg" style="left: 50%">🧺</div>
                     </div>
