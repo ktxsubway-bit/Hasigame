@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>하시 게임 (Hashi Games)</title>
+    <title>하시 게임</title>
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons (CDN) -->
@@ -37,7 +37,7 @@
                 <i data-lucide="gamepad-2" class="w-12 h-12 text-indigo-500"></i>
                 하시 게임
             </h1>
-            <p class="text-gray-500 text-lg">심심할 때 즐기는 20가지 꿀잼 미니게임 모음집!</p>
+            <p class="text-gray-500 text-lg">심심할 때 즐기는 21가지 꿀잼 미니게임 모음집!</p>
         </header>
 
         <div id="games-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
@@ -1868,6 +1868,127 @@
         };
 
         // ==========================================
+        // 21. 타이밍 맞추기 (Timing Game)
+        // ==========================================
+        const mountTiming = (container) => {
+            let play=false, score=0, reqId;
+            let lineX=0, dir=1, speed=1.5, targetX=40, targetW=20;
+
+            container.innerHTML = `
+                <div class="flex flex-col items-center w-full touch-none select-none">
+                    <div class="flex justify-between w-full max-w-sm px-4 mb-4 text-xl font-bold">
+                        <span class="text-indigo-600">점수: <span id="tm-score">0</span></span>
+                    </div>
+                    <div id="tm-board" class="relative bg-gray-200 w-full max-w-sm h-24 rounded-xl overflow-hidden shadow-inner mb-8 transition-colors duration-100">
+                        <div id="tm-target" class="absolute h-full bg-green-400 opacity-60" style="left: 40%; width: 20%;"></div>
+                        <div id="tm-line" class="absolute h-full w-2 bg-red-600 top-0 shadow-[0_0_8px_red] z-10" style="left: 0%;"></div>
+                        <div id="tm-ov" class="absolute inset-0 bg-black/60 flex flex-col items-center justify-center z-20 text-white">
+                            <p id="tm-msg" class="text-2xl font-bold mb-2 hidden"></p>
+                            <button id="tm-st" class="bg-indigo-500 px-6 py-2 rounded-full font-bold mt-2">시작하기</button>
+                        </div>
+                    </div>
+                    <button id="tm-action" class="w-48 h-48 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold text-4xl shadow-xl active:scale-95 active:shadow-inner transition-transform flex items-center justify-center cursor-pointer hover:brightness-110">HIT!</button>
+                    <p class="mt-6 text-sm text-gray-500 text-center">빈 화면 좌클릭, HIT 버튼 터치, 또는 스페이스바!</p>
+                </div>
+            `;
+            lucide.createIcons();
+
+            const line = document.getElementById('tm-line');
+            const target = document.getElementById('tm-target');
+            const ov = document.getElementById('tm-ov');
+            const msg = document.getElementById('tm-msg');
+            const stBtn = document.getElementById('tm-st');
+            const actionBtn = document.getElementById('tm-action');
+            const board = document.getElementById('tm-board');
+
+            const resetLevel = () => {
+                speed = 1.2 + (score * 0.15); // 점수가 오를수록 선이 빨라짐
+                targetW = Math.max(3, 20 - (score * 0.4)); // 점수가 오를수록 타겟이 좁아짐
+                targetX = Math.random() * (100 - targetW); // 타겟 위치 랜덤 재배치
+                target.style.left = `${targetX}%`;
+                target.style.width = `${targetW}%`;
+            };
+
+            const start = () => {
+                play = true; score = 0; lineX = 0; dir = 1;
+                document.getElementById('tm-score').textContent = 0;
+                ov.classList.add('hidden');
+                resetLevel();
+                reqId = requestAnimationFrame(loop);
+            };
+
+            const loop = () => {
+                if(!play) return;
+                lineX += dir * speed;
+                // 양끝에 닿으면 방향 전환
+                if(lineX >= 100 || lineX <= 0) {
+                    dir *= -1;
+                    lineX = Math.max(0, Math.min(100, lineX));
+                }
+                line.style.left = `${lineX}%`;
+                reqId = requestAnimationFrame(loop);
+            };
+
+            const doHit = (e) => {
+                if(e) e.preventDefault();
+                if(!play) return;
+                
+                // 중심점 기준 판정 (선이 타겟 영역 안에 있는지 확인)
+                if(lineX >= targetX && lineX <= targetX + targetW) {
+                    score++;
+                    document.getElementById('tm-score').textContent = score;
+                    
+                    // 성공 시 배경 반짝임 효과
+                    board.classList.add('bg-green-200');
+                    setTimeout(() => board.classList.remove('bg-green-200'), 100);
+                    
+                    resetLevel();
+                } else {
+                    // 실패 시 게임 오버
+                    play = false;
+                    ov.classList.remove('hidden');
+                    msg.textContent = `실패! 최종 점수: ${score}`;
+                    msg.classList.remove('hidden');
+                    stBtn.textContent = '다시하기';
+                }
+            };
+
+            stBtn.addEventListener('click', (e) => {
+                e.stopPropagation(); // 시작 버튼 누를 때 배경 클릭 판정 안 되게 방지
+                start();
+            });
+
+            // 1. 하단 HIT 버튼 처리 (모바일 터치 & PC 클릭)
+            actionBtn.addEventListener('mousedown', doHit);
+            actionBtn.addEventListener('touchstart', (e) => { e.preventDefault(); doHit(); }, {passive:false});
+
+            // 2. 배경 마우스 좌클릭 처리
+            const bgClick = (e) => {
+                // 시작 버튼이나 컨트롤 버튼이 아닌 빈 공간을 좌클릭(button === 0) 했을 때만 반응
+                if(play && e.target.id !== 'tm-st' && e.target.id !== 'tm-action') {
+                    if (e.button === 0) doHit(); 
+                }
+            };
+            container.addEventListener('mousedown', bgClick);
+
+            // 3. 키보드 스페이스바 처리
+            const keydown = (e) => {
+                if(!play) return;
+                if(e.code === 'Space') {
+                    e.preventDefault();
+                    doHit();
+                }
+            };
+            window.addEventListener('keydown', keydown);
+
+            return () => { 
+                cancelAnimationFrame(reqId); 
+                window.removeEventListener('keydown', keydown); 
+                container.removeEventListener('mousedown', bgClick);
+            };
+        };
+
+        // ==========================================
         // 메인 데이터 & 라우팅
         // ==========================================
         const GAMES = [
@@ -1891,6 +2012,7 @@
             { id: 'snake', title: '스네이크(NPC)', icon: 'bug', color: 'bg-lime-100 text-lime-700', mount: mountSnake },
             { id: '2048', title: '2048', icon: 'layout-grid', color: 'bg-amber-100 text-amber-800', mount: mount2048 },
             { id: 'breakout', title: '벽돌 깨기', icon: 'layout-template', color: 'bg-rose-100 text-rose-700', mount: mountBreakout },
+            { id: 'timing', title: '타이밍 맞추기', icon: 'crosshair', color: 'bg-indigo-100 text-indigo-700', mount: mountTiming },
         ];
 
         function initMenu() {
@@ -1940,3 +2062,4 @@
     </script>
 </body>
 </html>
+
