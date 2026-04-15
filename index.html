@@ -47,7 +47,7 @@
             <div class="bg-indigo-100 border-l-4 border-indigo-500 p-4 rounded-r-xl flex justify-between items-center shadow-sm">
                 <div class="flex items-center w-full overflow-hidden">
                     <i data-lucide="megaphone" class="w-6 h-6 text-indigo-600 mr-3 shrink-0"></i>
-                    <marquee id="notice-marquee" class="text-indigo-900 font-bold text-lg" scrollamount="6">환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 Delete 키를 누르세요)</marquee>
+                    <marquee id="notice-marquee" class="text-indigo-900 font-bold text-lg" scrollamount="6">환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 ￦ 키를 누르세요)</marquee>
                 </div>
                 <button id="admin-edit-btn" onclick="openAdminEdit()" class="hidden ml-4 shrink-0 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition shadow-md whitespace-nowrap">공지 수정</button>
             </div>
@@ -114,7 +114,7 @@
     <!-- 1. 기본 UI & 게임 로직 (가장 먼저 실행되어 멈추지 않음) -->
     <!-- ========================================== -->
     <script>
-        window.currentNotice = "환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 Delete 키를 누르세요)";
+        window.currentNotice = "환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 ￦ 키를 누르세요)";
         window.isAdmin = false;
         window.currentCleanup = null;
 
@@ -134,9 +134,9 @@
             lucide.createIcons();
         });
 
-        // 관리자 로그인 기능 (Delete 키)
+        // 관리자 로그인 기능 (￦ 키)
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Delete') {
+            if (e.key === '\\' || e.key === '₩') {
                 const loginModal = document.getElementById('admin-login-modal');
                 const editModal = document.getElementById('admin-edit-modal');
                 if (loginModal.classList.contains('hidden') && editModal.classList.contains('hidden')) {
