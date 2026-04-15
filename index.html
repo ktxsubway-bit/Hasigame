@@ -58,7 +58,7 @@
         </div>
         
         <div class="mt-12 text-center text-gray-400 text-sm flex flex-col gap-2">
-            <span>v2.7 (GitHub Pages 완벽 호환) • 모바일 & PC 완벽 지원</span>
+            <span>v2.8 (Cloud Error Handling) • 모바일 & PC 완벽 지원</span>
             <span>&copy; 2026. 하시소프트웨어. All rights reserved.</span>
         </div>
     </div>
@@ -2424,66 +2424,5 @@
             document.getElementById('menu-screen').classList.remove('hidden');
         };
     </script>
-
-    <!-- ========================================== -->
-    <!-- 2. 클라우드 연동 스크립트 (선택사항) -->
-    <!-- ========================================== -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // 사용자가 제공한 파이어베이스 설정값 적용!
-        const firebaseConfig = {
-          apiKey: "AIzaSyA9CfIdZ0DNkvUdOk3-GlMlHV_FbAFNnGk",
-          authDomain: "hasi-game.firebaseapp.com",
-          projectId: "hasi-game",
-          storageBucket: "hasi-game.firebasestorage.app",
-          messagingSenderId: "48274416774",
-          appId: "1:48274416774:web:c15811462fc618ebdd9d07",
-          measurementId: "G-FT9MYSD4GW"
-        };
-
-        if (firebaseConfig.apiKey !== "") {
-            try {
-                const app = initializeApp(firebaseConfig);
-                const auth = getAuth(app);
-                const db = getFirestore(app);
-
-                const initAuth = async () => {
-                    await signInAnonymously(auth);
-                    const noticeRef = doc(db, 'hashigames', 'public', 'config', 'main_notice');
-                    
-                    // 1. 클라우드에서 실시간으로 공지 불러오기
-                    onSnapshot(noticeRef, (docSnap) => {
-                        if (docSnap.exists()) {
-                            window.currentNotice = docSnap.data().text;
-                            document.getElementById('notice-marquee').textContent = window.currentNotice;
-                        }
-                    });
-
-                    // 2. 기본 저장 함수를 클라우드 저장용으로 덮어쓰기
-                    window.saveNotice = async () => {
-                        const inputVal = document.getElementById('notice-input').value;
-                        if(inputVal.trim() !== '') {
-                            window.currentNotice = inputVal;
-                            document.getElementById('notice-marquee').textContent = window.currentNotice;
-                            try {
-                                await setDoc(noticeRef, { text: inputVal }, { merge: true });
-                                alert("클라우드 공지 저장 완료! (모든 사람에게 동기화됩니다)"); 
-                            } catch(e) {
-                                console.error(e);
-                                alert("저장 실패: Firebase 데이터베이스 보안 규칙(Rules)이 쓰기 허용 상태인지 확인하세요.");
-                            }
-                        }
-                        window.closeAdminEdit();
-                    };
-                };
-                initAuth();
-            } catch(e) {
-                console.error("Firebase 초기화 에러:", e);
-            }
-        }
-    </script>
 </body>
-    </html>
+</html>
