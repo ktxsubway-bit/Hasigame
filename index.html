@@ -1460,194 +1460,21 @@
 
         const mountRacing = (container) => {
             container.innerHTML = `
-                <div class="flex flex-col items-center w-full touch-none select-none mt-4">
-                    <div class="flex justify-between w-full max-w-sm px-4 mb-4 font-bold text-xl">
-                        <span class="text-yellow-600 bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 w-full text-center">점수: <span id="rc-score" class="font-black text-2xl ml-2">0</span></span>
+                <div class="flex flex-col items-center w-full h-full">
+                    <div class="flex justify-between w-full max-w-5xl px-2 mb-3 font-bold text-xl shrink-0">
+                        <span class="text-yellow-600 bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 w-full text-center">프리 드라이브</span>
                     </div>
-                    <div id="rc-board" class="relative bg-slate-800 w-full max-w-sm h-80 rounded-3xl overflow-hidden border-[6px] border-slate-700 shadow-2xl">
-                        <div id="rc-canvas-container" class="absolute inset-0"></div>
-                        <div id="rc-ov" class="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center z-20 text-white backdrop-blur-sm">
-                            <p id="rc-msg" class="text-5xl font-black mb-4 hidden drop-shadow-lg">💥</p>
-                            <p id="rc-final" class="mb-6 font-bold text-xl hidden"></p>
-                            <button id="rc-st" class="bg-yellow-500 hover:bg-yellow-600 text-black px-10 py-4 rounded-full font-black shadow-xl transition-colors text-lg">출발!</button>
-                        </div>
-                    </div>
-                    <div class="flex justify-center space-x-6 mt-8 w-full max-w-sm px-4">
-                        <button id="rc-left" class="bg-white border border-slate-200 p-6 rounded-2xl flex-1 flex justify-center shadow-sm active:bg-slate-100 text-slate-600 hover:text-indigo-600 transition-colors"><i data-lucide="chevron-left" class="w-8 h-8"></i></button>
-                        <button id="rc-right" class="bg-white border border-slate-200 p-6 rounded-2xl flex-1 flex justify-center shadow-sm active:bg-slate-100 text-slate-600 hover:text-indigo-600 transition-colors"><i data-lucide="chevron-right" class="w-8 h-8"></i></button>
+                    <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
+                        <iframe 
+                            src="https://ktxsubway-bit.github.io/hasigamed/" 
+                            class="absolute inset-0 w-full h-full border-0"
+                            allowfullscreen="true"
+                            scrolling="no"
+                        ></iframe>
                     </div>
                 </div>
             `;
-            lucide.createIcons();
-            
-            let play = false, score = 0, reqId, finishTime = 0, finishLineObj = null, lastT = 0, targetX = 0, obstacles = [];
-            const canvasContainer = document.getElementById('rc-canvas-container');
-            const width = canvasContainer.clientWidth || 300, height = canvasContainer.clientHeight || 300;
-            
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB); scene.fog = new THREE.Fog(0x87CEEB, 10, 80); 
-            const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);
-            camera.position.set(0, 5, 10); camera.lookAt(0, 0, -10);
-            const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(width, height);
-            canvasContainer.appendChild(renderer.domElement);
-            
-            scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.5); dirLight.position.set(10, 20, 10); scene.add(dirLight);
-            
-            const road = new THREE.Mesh(new THREE.PlaneGeometry(24, 300), new THREE.MeshStandardMaterial({ color: 0x444444 }));
-            road.rotation.x = -Math.PI / 2; scene.add(road);
-            const grass = new THREE.Mesh(new THREE.PlaneGeometry(200, 200), new THREE.MeshStandardMaterial({ color: 0x3cb043 }));
-            grass.rotation.x = -Math.PI / 2; grass.position.y = -0.1; scene.add(grass);
-            
-            const markers = [];
-            for(let i=0; i<10; i++) {
-                const marker = new THREE.Mesh(new THREE.PlaneGeometry(0.4, 3), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-                marker.rotation.x = -Math.PI / 2; marker.position.set(0, 0.01, -i * 10);
-                scene.add(marker); markers.push(marker);
-            }
-            
-            const createCarModel = (colorHex, isObstacle = false) => {
-                const car = new THREE.Group();
-                const chassis = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 4), new THREE.MeshStandardMaterial({ color: colorHex }));
-                chassis.position.y = 0.4; car.add(chassis);
-                const fWing = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 0.6), new THREE.MeshStandardMaterial({ color: colorHex }));
-                fWing.position.set(0, 0.3, -1.8); car.add(fWing);
-                const rWing = new THREE.Mesh(new THREE.BoxGeometry(2.2, 0.1, 0.6), new THREE.MeshStandardMaterial({ color: colorHex }));
-                rWing.position.set(0, 0.9, 1.8); car.add(rWing);
-                const cockpit = new THREE.Mesh(new THREE.BoxGeometry(0.6, 0.3, 1), new THREE.MeshStandardMaterial({ color: 0x111111 }));
-                cockpit.position.set(0, 0.7, 0.2); car.add(cockpit);
-                
-                const wheelMat = new THREE.MeshStandardMaterial({ color: 0x1a1a1a, roughness: 0.9 });
-                const wPositions = [ [-1.2, 0.5, 1.3], [1.2, 0.5, 1.3], [-1.2, 0.5, -1.4], [1.2, 0.5, -1.4] ];
-                wPositions.forEach(pos => {
-                    const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.4, 16); wheelGeo.rotateZ(Math.PI / 2);
-                    const wheel = new THREE.Mesh(wheelGeo, wheelMat); wheel.position.set(pos[0], pos[1], pos[2]); car.add(wheel);
-                });
-                if(isObstacle) car.rotation.y = Math.PI;
-                return car;
-            };
-
-            const playerCar = createCarModel(0x3b82f6, false); playerCar.position.set(0, 0, 5); scene.add(playerCar);
-            
-            const start = () => {
-                score = 0; play = true; targetX = 0; playerCar.position.x = 0;
-                finishTime = performance.now() + 15000 + Math.random() * 15000;
-                if (finishLineObj) { scene.remove(finishLineObj); finishLineObj = null; }
-                obstacles.forEach(o => scene.remove(o.mesh)); obstacles = [];
-                document.getElementById('rc-ov').classList.add('hidden');
-                lastT = performance.now(); reqId = requestAnimationFrame(loop);
-            };
-            
-            const loop = (time) => {
-                if (!play) return;
-                score++; document.getElementById('rc-score').textContent = Math.floor(score / 5);
-                const speed = 0.5 + (score * 0.0001);
-                
-                markers.forEach(m => { m.position.z += speed; if (m.position.z > 10) m.position.z -= 90; });
-                
-                playerCar.position.x += (targetX - playerCar.position.x) * 0.15;
-                playerCar.rotation.y = (playerCar.position.x - targetX) * 0.05; 
-                playerCar.rotation.z = (playerCar.position.x - targetX) * 0.02; 
-                
-                camera.position.x += (playerCar.position.x * 0.6 - camera.position.x) * 0.1;
-                camera.lookAt(camera.position.x * 0.5, 0, -10);
-
-                if (!finishLineObj && time - lastT > Math.max(400, 1500 - score * 0.2)) {
-                    const isRock = Math.random() > 0.5;
-                    let obsMesh;
-                    if (isRock) {
-                        obsMesh = new THREE.Mesh(new THREE.DodecahedronGeometry(1.2), new THREE.MeshStandardMaterial({ color: 0x888888 }));
-                        obsMesh.position.y = 0.8;
-                    } else { obsMesh = createCarModel(0xef4444, true); obsMesh.position.y = 0; }
-                    
-                    const lanes = [-3.5, 0, 3.5]; 
-                    obsMesh.position.x = lanes[Math.floor(Math.random()*3)];
-                    obsMesh.position.z = -80;
-                    scene.add(obsMesh); obstacles.push({ mesh: obsMesh, speedMod: isRock ? 1 : 1.3 }); 
-                    lastT = time;
-                }
-                
-                if (!finishLineObj && time > finishTime) {
-                    const flGroup = new THREE.Group();
-                    const flMesh = new THREE.Mesh(new THREE.PlaneGeometry(24, 2), new THREE.MeshBasicMaterial({ color: 0xffffff }));
-                    flMesh.rotation.x = -Math.PI / 2; flMesh.position.y = 0.02; flGroup.add(flMesh);
-                    
-                    const bannerGroup = new THREE.Group();
-                    for(let i=0; i<12; i++) {
-                        const bMesh = new THREE.Mesh(new THREE.BoxGeometry(2, 2, 0.5), new THREE.MeshBasicMaterial({color: i%2===0 ? 0x000000 : 0xffffff}));
-                        bMesh.position.set(-11 + i*2, 3, 0); bannerGroup.add(bMesh);
-                    }
-                    flGroup.add(bannerGroup); flGroup.position.set(0, 0, -80);
-                    scene.add(flGroup); finishLineObj = flGroup;
-                }
-                
-                let hit = false;
-                const playerBox = new THREE.Box3().setFromObject(playerCar); playerBox.expandByScalar(-0.3); 
-                
-                for(let i = obstacles.length - 1; i >= 0; i--) {
-                    let obs = obstacles[i];
-                    obs.mesh.position.z += speed * obs.speedMod;
-                    const obsBox = new THREE.Box3().setFromObject(obs.mesh); obsBox.expandByScalar(-0.2);
-                    if(playerBox.intersectsBox(obsBox)) hit = true;
-                    if(obs.mesh.position.z > 15) { scene.remove(obs.mesh); obstacles.splice(i, 1); }
-                }
-                
-                if (finishLineObj) {
-                    finishLineObj.position.z += speed;
-                    if (finishLineObj.position.z > playerCar.position.z) {
-                        play = false;
-                        const ov = document.getElementById('rc-ov'); ov.classList.remove('hidden'); 
-                        document.getElementById('rc-msg').textContent = '🏁 완주 성공!'; document.getElementById('rc-msg').classList.remove('hidden');
-                        document.getElementById('rc-final').innerHTML = `<span class="text-sm block mb-1 text-slate-300">기록</span><span class="text-3xl text-yellow-400">${Math.floor(score/5)}</span>`; document.getElementById('rc-final').classList.remove('hidden');
-                        document.getElementById('rc-st').textContent = '다시하기';
-                        renderer.render(scene, camera); return;
-                    }
-                }
-                
-                if (hit) {
-                    play = false;
-                    const ov = document.getElementById('rc-ov'); ov.classList.remove('hidden');
-                    document.getElementById('rc-msg').textContent = '💥 쾅!'; document.getElementById('rc-msg').classList.remove('hidden');
-                    document.getElementById('rc-final').innerHTML = `<span class="text-sm block mb-1 text-slate-300">최종 점수</span><span class="text-3xl text-yellow-400">${Math.floor(score/5)}</span>`; document.getElementById('rc-final').classList.remove('hidden');
-                    document.getElementById('rc-st').textContent = '다시하기';
-                }
-                
-                renderer.render(scene, camera);
-                if(play) reqId = requestAnimationFrame(loop);
-            };
-            
-            document.getElementById('rc-st').addEventListener('click', start);
-            const mv = (d) => { if(play) { let currentLane = Math.round(targetX / 3.5); targetX = Math.max(-3.5, Math.min(3.5, (currentLane + d) * 3.5)); } }; 
-            document.getElementById('rc-left').addEventListener('click', () => mv(-1));
-            document.getElementById('rc-right').addEventListener('click', () => mv(1));
-            
-            const tmv = (e) => {
-                if(!play) return;
-                const rect = canvasContainer.getBoundingClientRect();
-                const ratio = ((e.touches ? e.touches[0].clientX : e.clientX) - rect.left) / rect.width;
-                targetX = Math.max(-4.5, Math.min(4.5, (ratio - 0.5) * 10)); 
-            };
-            canvasContainer.addEventListener('touchmove', tmv, {passive:true}); canvasContainer.addEventListener('mousemove', (e)=>{if(e.buttons===1)tmv(e);});
-            
-            const keydown = (e) => {
-                if(!play) return;
-                if(['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
-                if(e.key === 'ArrowLeft') mv(-1); if(e.key === 'ArrowRight') mv(1);
-            };
-            window.addEventListener('keydown', keydown);
-            
-            const resizeObs = new ResizeObserver(() => {
-                if(canvasContainer.clientWidth === 0) return;
-                camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight); renderer.render(scene, camera);
-            });
-            resizeObs.observe(canvasContainer); renderer.render(scene, camera);
-            
-            return () => { 
-                cancelAnimationFrame(reqId); window.removeEventListener('keydown', keydown); resizeObs.disconnect(); renderer.dispose();
-                scene.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); if (obj.material) obj.material.dispose(); });
-            };
+            return () => {};
         };
 
         const mountSnake = (container) => {
@@ -2583,7 +2410,7 @@
             { id: 'jump', title: '점프점프', icon: 'person-standing', color: 'bg-sky-100 text-sky-600', mount: mountJump },
             { id: 'bomb', title: '폭탄 피하기', icon: 'bomb', color: 'bg-slate-200 text-slate-700', mount: mountBomb },
             { id: 'typing', title: '단어 타자', icon: 'keyboard', color: 'bg-indigo-100 text-indigo-600', mount: mountTyping },
-            { id: 'racing', title: '레이싱 3D', icon: 'car-front', color: 'bg-yellow-100 text-yellow-600', mount: mountRacing },
+            { id: 'racing', title: '프리 드라이브', icon: 'car-front', color: 'bg-yellow-100 text-yellow-600', mount: mountRacing },
             { id: 'snake', title: '스네이크(NPC)', icon: 'bug', color: 'bg-lime-100 text-lime-700', mount: mountSnake },
             { id: '2048', title: '2048', icon: 'layout-grid', color: 'bg-amber-100 text-amber-800', mount: mount2048 },
             { id: 'breakout', title: '벽돌 깨기', icon: 'layout-template', color: 'bg-rose-100 text-rose-700', mount: mountBreakout },
