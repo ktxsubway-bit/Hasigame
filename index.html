@@ -51,7 +51,7 @@
                 <i data-lucide="gamepad-2" class="w-12 h-12 text-indigo-500"></i>
                 HASI!
             </h1>
-            <p class="text-slate-500 font-medium">다양한 23가지 미니게임을 즐겨보세요</p>
+            <p class="text-slate-500 font-medium">다양한 미니게임을 즐겨보세요</p>
         </header>
 
         <!-- 공지사항 배너 -->
@@ -140,7 +140,7 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // 전역 상태
-        window.currentNotice = "하시 게임";
+        window.currentNotice = "환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 ￦ 또는 Delete 키를 누르세요)";
         window.isAdmin = false;
         window.currentCleanup = null;
         let currentUser = null;
@@ -762,8 +762,8 @@
                 document.getElementById('wa-time').textContent = time;
                 const grid = document.getElementById('wa-grid');
                 grid.innerHTML = moles.map((m, i) => `
-                    <div data-idx="${i}" class="wa-hole w-full h-full bg-emerald-900 rounded-full relative overflow-hidden flex items-end justify-center cursor-pointer border-4 border-emerald-950 shadow-inner">
-                        ${m ? '<div class="text-6xl animate-bounce transform origin-bottom pb-1 pointer-events-none drop-shadow-lg">🦫</div>' : ''}
+                    <div data-idx="${i}" class="wa-hole w-full h-full bg-emerald-900 rounded-full relative overflow-hidden cursor-pointer border-4 border-emerald-950 shadow-inner">
+                        ${m ? '<div class="absolute bottom-0 left-1/2 -translate-x-1/2 text-6xl animate-bounce transform origin-bottom pb-1 pointer-events-none drop-shadow-lg">🦫</div>' : ''}
                     </div>
                 `).join('');
                 
@@ -773,7 +773,7 @@
                         const i = el.dataset.idx;
                         if(playing && moles[i]) { 
                             score += 10; moles[i] = false; 
-                            el.innerHTML = '<div class="text-5xl pb-4 pointer-events-none drop-shadow-lg">💥</div>';
+                            el.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-5xl pointer-events-none drop-shadow-lg">💥</div>';
                             setTimeout(render, 150);
                         }
                     };
@@ -1603,10 +1603,10 @@
 
             container.innerHTML = `
                 <div class="flex flex-col items-center touch-none select-none mt-4">
-                    <div class="flex justify-between w-full max-w-[280px] mb-4 text-xl font-bold">
+                    <div class="flex justify-between w-full max-w-[288px] mb-4 text-xl font-bold">
                         <span class="bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 text-amber-700 w-full text-center">점수: <span id="p-score" class="font-black text-2xl ml-2">0</span></span>
                     </div>
-                    <div id="p-board" class="relative bg-[#bbada0] p-2 rounded-2xl w-[280px] h-[280px] grid grid-cols-4 grid-rows-4 gap-2 touch-none shadow-inner border-4 border-[#a39485]">
+                    <div id="p-board" class="relative bg-[#bbada0] p-2 rounded-2xl w-[288px] h-[288px] grid grid-cols-4 grid-rows-4 gap-2 touch-none shadow-inner border-4 border-[#a39485]">
                         <div id="p-ov" class="absolute inset-0 bg-white/80 flex flex-col items-center justify-center z-20 rounded-xl backdrop-blur-sm">
                             <p id="p-msg" class="text-4xl font-black text-slate-800 mb-6 hidden">게임 오버!</p>
                             <button id="p-st" class="bg-amber-600 hover:bg-amber-700 text-white px-8 py-3 rounded-full font-bold shadow-xl transition-colors text-lg">시작하기</button>
@@ -2197,12 +2197,12 @@
             { id: 'jump', title: '점프점프', icon: 'person-standing', color: 'bg-sky-100 text-sky-600', mount: mountJump },
             { id: 'bomb', title: '폭탄 피하기', icon: 'bomb', color: 'bg-slate-200 text-slate-700', mount: mountBomb },
             { id: 'typing', title: '단어 타자', icon: 'keyboard', color: 'bg-indigo-100 text-indigo-600', mount: mountTyping },
-            { id: 'freedrive', title: '프리 드라이브 (PC)', icon: 'car-front', color: 'bg-yellow-100 text-yellow-600', mount: mountRacing },
+            { id: 'freedrive', title: '프리 드라이브', icon: 'car-front', color: 'bg-yellow-100 text-yellow-600', mount: mountRacing },
             { id: 'snake', title: '스네이크(NPC)', icon: 'bug', color: 'bg-lime-100 text-lime-700', mount: mountSnake },
             { id: '2048', title: '2048', icon: 'layout-grid', color: 'bg-amber-100 text-amber-800', mount: mount2048 },
             { id: 'breakout', title: '벽돌 깨기', icon: 'layout-template', color: 'bg-rose-100 text-rose-700', mount: mountBreakout },
             { id: 'timing', title: '타이밍 맞추기', icon: 'crosshair', color: 'bg-indigo-100 text-indigo-700', mount: mountTiming },
-            { id: 'fixie', title: '픽시 자전거 (PC)', icon: 'bike', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump },
+            { id: 'fixie', title: '픽시 자전거', icon: 'bike', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump },
             { id: 'motorcycle', title: '오토바이 3D', icon: 'gauge', color: 'bg-orange-100 text-orange-700', mount: mountMotorcycle },
         ];
 
