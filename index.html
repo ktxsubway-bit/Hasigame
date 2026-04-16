@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>하시 게임</title>
+    <title>하시게임</title>
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons (CDN) -->
@@ -59,7 +59,7 @@
             <div class="bg-indigo-100 border-l-4 border-indigo-500 p-4 rounded-r-2xl flex justify-between items-center shadow-sm">
                 <div class="flex items-center w-full overflow-hidden">
                     <i data-lucide="megaphone" class="w-6 h-6 text-indigo-600 mr-3 shrink-0"></i>
-                    <marquee id="notice-marquee" class="text-indigo-900 font-bold text-lg" scrollamount="6">환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 ￦ 또는 Delete 키를 누르세요)</marquee>
+                    <marquee id="notice-marquee" class="text-indigo-900 font-bold text-lg" scrollamount="6">하시게임</marquee>
                 </div>
                 <button id="admin-edit-btn" onclick="openAdminEdit()" class="hidden ml-4 shrink-0 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition shadow-md whitespace-nowrap">공지 수정</button>
             </div>
@@ -2177,8 +2177,27 @@
             };
         };
 
+        const mountFps = (container) => {
+            container.innerHTML = `
+                <div class="flex flex-col items-center w-full h-full pb-4">
+                    <div class="flex justify-between w-full max-w-5xl px-2 mb-3 font-bold text-xl shrink-0">
+                        <span class="text-red-600 bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 w-full text-center">FPS 서바이벌</span>
+                    </div>
+                    <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
+                        <iframe 
+                            src="https://ktxsubway-bit.github.io/hasigamefps/" 
+                            class="absolute inset-0 w-full h-full border-0"
+                            allowfullscreen="true"
+                            scrolling="no"
+                        ></iframe>
+                    </div>
+                </div>
+            `;
+            return () => {};
+        };
+
         // ==========================================
-        // 메인 데이터 & 라우팅 (전체 23개 게임 완벽 복원)
+        // 메인 데이터 & 라우팅 (전체 24개 게임 완벽 복원)
         // ==========================================
         const GAMES = [
             { id: 'tetris', title: '테트리스', icon: 'blocks', color: 'bg-indigo-100 text-indigo-600', mount: mountTetris },
@@ -2197,13 +2216,14 @@
             { id: 'jump', title: '점프점프', icon: 'person-standing', color: 'bg-sky-100 text-sky-600', mount: mountJump },
             { id: 'bomb', title: '폭탄 피하기', icon: 'bomb', color: 'bg-slate-200 text-slate-700', mount: mountBomb },
             { id: 'typing', title: '단어 타자', icon: 'keyboard', color: 'bg-indigo-100 text-indigo-600', mount: mountTyping },
-            { id: 'freedrive', title: '프리 드라이브 (PC)', icon: 'car-front', color: 'bg-yellow-100 text-yellow-600', mount: mountRacing },
-            { id: 'snake', title: '스네이크 (NPC)', icon: 'bug', color: 'bg-lime-100 text-lime-700', mount: mountSnake },
+            { id: 'freedrive', title: '프리 드라이브(PC)', icon: 'car-front', color: 'bg-yellow-100 text-yellow-600', mount: mountRacing },
+            { id: 'snake', title: '스네이크(NPC)', icon: 'bug', color: 'bg-lime-100 text-lime-700', mount: mountSnake },
             { id: '2048', title: '2048', icon: 'layout-grid', color: 'bg-amber-100 text-amber-800', mount: mount2048 },
             { id: 'breakout', title: '벽돌 깨기', icon: 'layout-template', color: 'bg-rose-100 text-rose-700', mount: mountBreakout },
             { id: 'timing', title: '타이밍 맞추기', icon: 'crosshair', color: 'bg-indigo-100 text-indigo-700', mount: mountTiming },
-            { id: 'fixie', title: '픽시 자전거 (PC)', icon: 'bike', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump },
+            { id: 'fixie', title: '픽시 자전거(PC)', icon: 'bike', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump },
             { id: 'motorcycle', title: '오토바이 3D', icon: 'gauge', color: 'bg-orange-100 text-orange-700', mount: mountMotorcycle },
+            { id: 'fps', title: 'FPS 서바이벌(PC)', icon: 'swords', color: 'bg-red-100 text-red-600', mount: mountFps },
         ];
 
         // 게임 메뉴 렌더링
