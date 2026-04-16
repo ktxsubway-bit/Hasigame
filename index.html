@@ -12,7 +12,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
         /* 커스텀 스타일 */
-        body { -webkit-tap-highlight-color: transparent; font-family: 'Pretendard', system-ui, -apple-system, sans-serif; }
+        body { -webkit-tap-highlight-color: transparent; font-family: 'Pretendard', system-ui, -apple-system, sans-serif; overflow-x: hidden; }
         .touch-none { touch-action: none; }
         .preserve-3d { transform-style: preserve-3d; }
         .rotate-y-180 { transform: rotateY(180deg); }
@@ -24,17 +24,14 @@
         /* 숨김 처리 유틸 */
         .hidden { display: none !important; }
         
-        @keyframes pulse-custom {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        .animate-pulse-custom { animation: pulse-custom 2s infinite; }
+        /* 게임 컨테이너 높이 꽉 차게 설정 (iframe 용) */
+        #game-container { height: calc(100vh - 70px); }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col">
 
-    <!-- 토스트 메시지 (알림창 대체) -->
-    <div id="toast-message" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl z-[200] hidden transition-opacity duration-300 opacity-0 text-center font-bold"></div>
+    <!-- 토스트 메시지 -->
+    <div id="toast-message" class="fixed bottom-10 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-2xl z-[200] hidden transition-opacity duration-300 opacity-0 text-center font-bold whitespace-nowrap w-max max-w-[90vw]"></div>
 
     <!-- 로딩 화면 -->
     <div id="loading-overlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white transition-opacity duration-300">
@@ -54,7 +51,7 @@
                 <i data-lucide="gamepad-2" class="w-12 h-12 text-indigo-500"></i>
                 HASHI
             </h1>
-            <p class="text-slate-500 font-medium">다양한 미니게임을 즐겨보세요</p>
+            <p class="text-slate-500 font-medium">다양한 23가지 미니게임을 즐겨보세요</p>
         </header>
 
         <!-- 공지사항 배너 -->
@@ -79,7 +76,7 @@
 
     <!-- 게임 실행 화면 -->
     <div id="game-screen" class="hidden fixed inset-0 bg-white z-40 flex flex-col">
-        <header class="flex items-center justify-between px-6 py-4 border-b">
+        <header class="flex items-center justify-between px-6 h-[70px] border-b shrink-0 bg-white">
             <button onclick="closeGame()" class="p-2 hover:bg-gray-100 rounded-full transition-colors flex items-center text-slate-600 font-bold">
                 <i data-lucide="arrow-left" class="w-6 h-6 mr-1"></i>
                 메뉴로
@@ -88,7 +85,7 @@
             <div class="w-20"></div> <!-- 밸런스용 빈 공간 -->
         </header>
         
-        <main id="game-container" class="flex-1 relative overflow-hidden bg-slate-50 flex items-center justify-center p-4">
+        <main id="game-container" class="w-full bg-slate-50 relative flex flex-col items-center justify-center overflow-hidden">
             <!-- 게임 내용이 여기에 마운트됩니다 -->
         </main>
     </div>
@@ -199,9 +196,7 @@
                             document.getElementById('notice-marquee').textContent = window.currentNotice;
                         }
                     }, (error) => {
-                        // 권한 에러 처리: 앱이 죽지 않게 콘솔 경고만 띄우고 계속 진행
-                        console.warn("🚨 파이어베이스 권한 에러 방어 완료: " + error.message);
-                        console.warn("👉 해결 방법: 파이어베이스 콘솔(Firebase Console) > [Firestore Database] > [규칙(Rules)] 탭에서 'allow read, write: if true;' 로 설정하고 게시하세요.");
+                        console.warn("Firestore 규칙을 'allow read, write: if true;'로 설정하면 정상 동기화됩니다.");
                     });
                     
                     showMenu();
@@ -318,18 +313,18 @@
 
             container.innerHTML = `
                 <div class="flex flex-col items-center space-y-8 w-full max-w-md mx-auto mt-4">
-                    <div class="flex space-x-10 text-center text-xl font-bold bg-white px-8 py-4 rounded-2xl shadow-sm">
+                    <div class="flex space-x-10 text-center text-xl font-bold bg-white px-8 py-4 rounded-2xl shadow-sm border border-slate-100">
                         <div>승 <span id="rps-win" class="text-blue-500 ml-2">0</span></div>
                         <div>무 <span id="rps-draw" class="text-slate-500 ml-2">0</span></div>
                         <div>패 <span id="rps-lose" class="text-rose-500 ml-2">0</span></div>
                     </div>
-                    <div class="flex justify-between w-full px-8 text-5xl">
-                        <div class="flex flex-col items-center"><span class="text-sm text-slate-400 font-bold mb-3">나</span><div id="rps-player" class="bg-indigo-50 p-6 rounded-3xl">❓</div></div>
-                        <div class="flex flex-col items-center"><span class="text-sm text-slate-400 font-bold mb-3">컴퓨터</span><div id="rps-computer" class="bg-slate-100 p-6 rounded-3xl">❓</div></div>
+                    <div class="flex justify-between w-full px-8 text-5xl mt-6">
+                        <div class="flex flex-col items-center"><span class="text-sm text-slate-400 font-bold mb-3">나</span><div id="rps-player" class="bg-indigo-50 border border-indigo-100 p-6 rounded-3xl shadow-sm">❓</div></div>
+                        <div class="flex flex-col items-center"><span class="text-sm text-slate-400 font-bold mb-3">컴퓨터</span><div id="rps-computer" class="bg-slate-100 border border-slate-200 p-6 rounded-3xl shadow-sm">❓</div></div>
                     </div>
-                    <div id="rps-result" class="text-3xl font-black h-10 text-indigo-600"></div>
-                    <div class="flex space-x-4 mt-8">
-                        ${choices.map(c => `<button data-choice="${c}" class="rps-btn p-6 bg-white rounded-3xl shadow-md border-2 border-slate-100 hover:border-indigo-200 hover:bg-indigo-50 text-5xl active:scale-95 transition-all">${emojis[c]}</button>`).join('')}
+                    <div id="rps-result" class="text-3xl font-black h-10 text-indigo-600 mt-6"></div>
+                    <div class="flex space-x-4 mt-10">
+                        ${choices.map(c => `<button data-choice="${c}" class="rps-btn p-6 bg-white rounded-3xl shadow-md border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 text-5xl active:scale-95 transition-all">${emojis[c]}</button>`).join('')}
                     </div>
                 </div>
             `;
@@ -373,17 +368,17 @@
 
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full max-w-sm mx-auto mt-4">
-                    <p class="mb-4 text-sm font-medium text-slate-500">중복 없는 3자리 숫자를 맞춰봐! (예: 123)</p>
+                    <p class="mb-4 text-sm font-medium text-slate-500 bg-white px-4 py-2 rounded-full border border-slate-200">중복 없는 3자리 숫자를 맞춰봐! (예: 123)</p>
                     <form id="bb-form" class="flex flex-col space-y-2 w-full mb-6">
                         <div class="flex space-x-2 w-full">
                             <input id="bb-input" type="text" inputmode="numeric" class="flex-1 border-2 border-indigo-200 rounded-2xl p-4 text-center text-3xl font-bold tracking-widest focus:outline-none focus:border-indigo-500 bg-white shadow-sm" placeholder="123" />
                             <button id="bb-submit" type="submit" disabled class="bg-indigo-600 text-white px-6 rounded-2xl font-bold text-lg disabled:opacity-50 transition-opacity shadow-md">입력</button>
                         </div>
-                        <p id="bb-err" class="text-rose-500 text-xs font-bold text-center h-4"></p>
+                        <p id="bb-err" class="text-rose-500 text-sm font-bold text-center h-5"></p>
                     </form>
-                    <div id="bb-over" class="mb-6 text-center hidden w-full bg-green-50 p-4 rounded-2xl border border-green-200">
-                        <p class="text-2xl font-black text-green-600 mb-3">🎉 정답입니다! 🎉</p>
-                        <button id="bb-restart" class="bg-slate-800 text-white px-6 py-2 rounded-full font-bold shadow-md hover:bg-slate-900 transition-colors">새 게임 시작</button>
+                    <div id="bb-over" class="mb-6 text-center hidden w-full bg-emerald-50 p-4 rounded-2xl border border-emerald-200 shadow-sm">
+                        <p class="text-2xl font-black text-emerald-600 mb-3">🎉 정답입니다! 🎉</p>
+                        <button id="bb-restart" class="bg-slate-800 text-white px-8 py-3 rounded-full font-bold shadow-md hover:bg-slate-900 transition-colors">새 게임 시작</button>
                     </div>
                     <div id="bb-list" class="w-full max-h-[300px] overflow-y-auto bg-white border border-slate-200 rounded-3xl p-3 shadow-sm">
                         <div class="text-center text-slate-400 py-8 font-medium">아직 시도한 기록이 없어.</div>
@@ -402,8 +397,7 @@
                 let val = e.target.value.replace(/[^0-9]/g, '').slice(0, 3);
                 input.value = val;
                 let unique = new Set(val).size === val.length;
-                if(val.length > 0 && !unique) err.textContent = '서로 다른 숫자를 입력해줘!';
-                else err.textContent = '';
+                if(val.length > 0 && !unique) err.textContent = '서로 다른 숫자를 입력해줘!'; else err.textContent = '';
                 submitBtn.disabled = val.length !== 3 || !unique || gameOver;
             });
 
@@ -411,21 +405,14 @@
                 e.preventDefault();
                 const val = input.value;
                 if(val.length !== 3 || new Set(val).size !== 3 || gameOver) return;
-
                 let strike = 0, ball = 0;
-                let arr = val.split('').map(Number);
-                arr.forEach((num, i) => {
-                    if(num === secret[i]) strike++;
-                    else if(secret.includes(num)) ball++;
+                val.split('').map(Number).forEach((num, i) => {
+                    if(num === secret[i]) strike++; else if(secret.includes(num)) ball++;
                 });
-
                 guesses.unshift({ val, strike, ball });
                 input.value = ''; submitBtn.disabled = true;
-                
                 renderList();
-                if(strike === 3) {
-                    gameOver = true; input.disabled = true; overDiv.classList.remove('hidden');
-                }
+                if(strike === 3) { gameOver = true; input.disabled = true; overDiv.classList.remove('hidden'); }
             });
 
             document.getElementById('bb-restart').addEventListener('click', () => {
@@ -439,7 +426,7 @@
                 listDiv.innerHTML = guesses.map(g => `
                     <div class="flex justify-between items-center p-3 border-b border-slate-100 last:border-0 hover:bg-slate-50 rounded-xl transition-colors">
                         <span class="text-2xl font-mono tracking-widest font-bold text-slate-700">${g.val}</span>
-                        <span class="font-black text-lg bg-slate-100 px-3 py-1 rounded-lg">
+                        <span class="font-black text-lg bg-slate-100 px-3 py-1 rounded-lg border border-slate-200">
                             <span class="text-rose-500">${g.strike}S</span> <span class="text-blue-500 ml-1">${g.ball}B</span>
                         </span>
                     </div>
@@ -453,10 +440,10 @@
             const size = 10;
 
             container.innerHTML = `
-                <div class="flex flex-col items-center touch-none mt-2">
-                    <div class="flex justify-between w-full max-w-xs mb-4 text-lg font-bold">
-                        <span class="text-emerald-600 bg-emerald-50 px-4 py-1 rounded-xl">점수: <span id="gf-score">0</span></span>
-                        <span id="gf-time" class="text-slate-600 bg-white border border-slate-200 px-4 py-1 rounded-xl">30s</span>
+                <div class="flex flex-col items-center touch-none mt-2 w-full max-w-xs mx-auto">
+                    <div class="flex justify-between w-full mb-4 text-lg font-bold">
+                        <span class="text-emerald-600 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100">점수: <span id="gf-score">0</span></span>
+                        <span id="gf-time" class="text-slate-600 bg-white border border-slate-200 px-4 py-2 rounded-xl shadow-sm">30s</span>
                     </div>
                     <div class="bg-white p-2 rounded-2xl border border-slate-200 relative shadow-sm w-[280px] h-[280px]">
                         <div id="gf-overlay" class="absolute inset-0 bg-slate-900/80 rounded-2xl flex flex-col items-center justify-center z-10 text-white backdrop-blur-sm">
@@ -831,7 +818,7 @@
                             <p id="rs-sub" class="text-xl opacity-90 font-medium">초록색이 되면 누르세요</p>
                         </div>
                     </div>
-                    <p class="mt-10 text-slate-500 text-base font-bold bg-white px-6 py-3 rounded-full shadow-sm">색깔이 바뀌는 순간을 터치하세요!</p>
+                    <p class="mt-10 text-slate-500 text-base font-bold bg-white px-6 py-3 rounded-full shadow-sm border border-slate-100">색깔이 바뀌는 순간을 터치하세요!</p>
                 </div>
             `;
 
@@ -950,7 +937,7 @@
                     </div>
                     <button id="sc-btn" class="w-64 h-64 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-black text-5xl shadow-[0_10px_40px_rgba(99,102,241,0.4)] active:scale-[0.92] transition-transform flex items-center justify-center border-8 border-indigo-200">START</button>
                     <div id="sc-fin" class="mt-10 text-center hidden w-full">
-                        <p id="sc-res" class="text-2xl font-black mb-6 text-slate-800"></p>
+                        <p id="sc-res" class="text-xl font-bold mb-6 text-slate-800"></p>
                         <button id="sc-rst" class="bg-slate-800 text-white px-10 py-4 rounded-full font-bold w-full shadow-lg hover:bg-slate-900 transition-colors text-lg">다시 하기</button>
                     </div>
                 </div>
@@ -998,7 +985,7 @@
             let board = Array.from({length:R}, ()=>Array(C).fill(null)), piece=null, score=0, play=false, over=false, tId = null;
 
             container.innerHTML = `
-                <div class="flex flex-col items-center touch-none mt-2">
+                <div class="flex flex-col items-center touch-none mt-2 w-full max-w-xs mx-auto">
                     <div class="flex justify-between w-full max-w-[260px] mb-3 text-lg font-black bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-200">
                         <span class="text-slate-500">SCORE</span><span id="te-score" class="text-indigo-600">0</span>
                     </div>
@@ -1460,7 +1447,7 @@
 
         const mountRacing = (container) => {
             container.innerHTML = `
-                <div class="flex flex-col items-center w-full h-full">
+                <div class="flex flex-col items-center w-full h-full pb-4">
                     <div class="flex justify-between w-full max-w-5xl px-2 mb-3 font-bold text-xl shrink-0">
                         <span class="text-yellow-600 bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 w-full text-center">프리 드라이브</span>
                     </div>
@@ -1942,221 +1929,21 @@
 
         const mountBikeJump = (container) => {
             container.innerHTML = `
-                <div class="flex flex-col items-center w-full touch-none select-none mt-4">
-                    <div class="flex justify-between w-full max-w-sm px-4 mb-4 text-xl font-bold">
-                        <span class="bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 text-sky-600 w-full text-center">점수: <span id="bj-score" class="font-black text-2xl ml-2">0</span></span>
+                <div class="flex flex-col items-center w-full h-full pb-4">
+                    <div class="flex justify-between w-full max-w-5xl px-2 mb-3 font-bold text-xl shrink-0">
+                        <span class="text-sky-600 bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 w-full text-center">픽시 자전거</span>
                     </div>
-                    <div id="bj-board" class="relative bg-gradient-to-b from-sky-200 to-sky-100 border-b-[6px] border-slate-800 w-full max-w-sm h-64 overflow-hidden shadow-inner rounded-t-3xl cursor-pointer">
-                        <div id="bj-canvas-container" class="absolute inset-0"></div>
-                        <div id="bj-ov" class="absolute inset-0 bg-slate-900/70 flex flex-col items-center justify-center z-30 text-white backdrop-blur-sm">
-                            <p id="bj-msg" class="text-4xl font-black mb-6 hidden text-rose-400">💥 쾅!</p>
-                            <button id="bj-st" class="bg-sky-500 hover:bg-sky-600 text-white px-10 py-4 rounded-full font-bold shadow-xl transition-colors text-xl">출발하기</button>
-                        </div>
+                    <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
+                        <iframe 
+                            src="https://ktxsubway-bit.github.io/hasigameb/" 
+                            class="absolute inset-0 w-full h-full border-0"
+                            allowfullscreen="true"
+                            scrolling="no"
+                        ></iframe>
                     </div>
-                    <div class="flex justify-center space-x-4 mt-6 w-full max-w-sm px-4">
-                        <button id="bj-btn-jump" class="flex-1 bg-white border border-slate-200 p-6 rounded-2xl flex items-center justify-center font-bold active:bg-slate-100 shadow-sm text-slate-700 text-lg hover:border-sky-300 transition-colors"><i data-lucide="arrow-up" class="mr-2 text-sky-500"></i> 점프</button>
-                        <button id="bj-btn-slide" class="flex-1 bg-white border border-slate-200 p-6 rounded-2xl flex items-center justify-center font-bold active:bg-slate-100 shadow-sm text-slate-700 text-lg hover:border-sky-300 transition-colors"><i data-lucide="arrow-down" class="mr-2 text-sky-500"></i> 슬라이딩</button>
-                    </div>
-                    <p class="mt-8 text-sm text-slate-500 font-medium">벽은 점프(위), 새는 슬라이딩(아래)으로 피해!</p>
                 </div>
             `;
-            lucide.createIcons();
-
-            let play = false, score = 0, over = false;
-            let py = 0, vy = 0, sliding = false, slideTimer = 0;
-            let reqId, lastT = 0, nextSpawnDelay = 1500;
-            const gravity = 0.025;
-            const jumpPower = 0.45;
-
-            const canvasContainer = document.getElementById('bj-canvas-container');
-            const width = canvasContainer.clientWidth || 300;
-            const height = canvasContainer.clientHeight || 256;
-            
-            const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0xa0e0ff); 
-            const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 100);
-            camera.position.set(0, 3, 10); 
-            camera.lookAt(0, 1.5, 0);
-
-            const renderer = new THREE.WebGLRenderer({ antialias: true });
-            renderer.setSize(width, height);
-            canvasContainer.appendChild(renderer.domElement);
-
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.8);
-            scene.add(ambientLight);
-            const dirLight = new THREE.DirectionalLight(0xffffff, 0.6);
-            dirLight.position.set(5, 10, 5);
-            scene.add(dirLight);
-
-            const groundMat = new THREE.MeshStandardMaterial({ color: 0xd4a373 }); 
-            const ground = new THREE.Mesh(new THREE.PlaneGeometry(100, 20), groundMat);
-            ground.rotation.x = -Math.PI / 2;
-            scene.add(ground);
-
-            const lines = [];
-            for(let i=0; i<8; i++) {
-                const lMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.5, 0.1), new THREE.MeshBasicMaterial({color: 0x8b5a2b}));
-                lMesh.rotation.x = -Math.PI / 2; lMesh.position.set(-15 + i*5, 0.01, 0);
-                scene.add(lMesh); lines.push(lMesh);
-            }
-
-            const playerGrp = new THREE.Group();
-            playerGrp.position.set(-4, 0.5, 0); 
-            
-            const bikeGrp = new THREE.Group();
-            const wheelMat = new THREE.MeshStandardMaterial({color: 0x222222, roughness: 0.9});
-            const wheelGeo = new THREE.CylinderGeometry(0.5, 0.5, 0.15, 16); wheelGeo.rotateX(Math.PI/2);
-            const fWheel = new THREE.Mesh(wheelGeo, wheelMat); fWheel.position.set(1.2, 0, 0);
-            const bWheel = new THREE.Mesh(wheelGeo, wheelMat); bWheel.position.set(-1.2, 0, 0);
-            bikeGrp.add(fWheel); bikeGrp.add(bWheel);
-            const frame = new THREE.Mesh(new THREE.BoxGeometry(2.4, 0.1, 0.1), new THREE.MeshStandardMaterial({color: 0x0ea5e9}));
-            frame.position.set(0, 0.5, 0);
-            const handlebar = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.8, 0.1), new THREE.MeshStandardMaterial({color: 0xcccccc}));
-            handlebar.position.set(0.9, 0.8, 0);
-            bikeGrp.add(frame); bikeGrp.add(handlebar); playerGrp.add(bikeGrp);
-
-            const riderGrp = new THREE.Group();
-            const body = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1.2, 0.6), new THREE.MeshStandardMaterial({color: 0xef4444})); 
-            body.position.set(0, 1.1, 0);
-            const head = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.5), new THREE.MeshStandardMaterial({color: 0xffdebb})); 
-            head.position.set(0, 1.9, 0);
-            riderGrp.add(body); riderGrp.add(head); playerGrp.add(riderGrp);
-            
-            scene.add(playerGrp);
-            
-            let obstacles = [];
-
-            const doJump = () => { if(play && py === 0 && !sliding) vy = jumpPower; };
-            const doSlide = () => { if(play && py === 0 && !sliding) { sliding = true; slideTimer = 35; } };
-
-            const start = () => {
-                score=0; py=0; vy=0; sliding=false; slideTimer=0; play=true; over=false; lastT=performance.now(); nextSpawnDelay=1500;
-                document.getElementById('bj-score').textContent = 0; document.getElementById('bj-ov').classList.add('hidden');
-                
-                playerGrp.position.y = 0.5; riderGrp.position.set(0, 0, 0); riderGrp.rotation.z = 0;
-                bikeGrp.position.set(0, 0, 0); bikeGrp.rotation.z = 0;
-                
-                obstacles.forEach(o => scene.remove(o.mesh)); obstacles = []; reqId = requestAnimationFrame(loop);
-            };
-
-            const loop = (time) => {
-                const speed = 0.2 + (score * 0.0001); 
-                
-                if (over) {
-                    riderGrp.position.x += 0.15; riderGrp.position.y -= 0.05; riderGrp.rotation.z -= 0.1;
-                    bikeGrp.rotation.z += 0.05; bikeGrp.position.x -= 0.05;
-                    renderer.render(scene, camera);
-                    if (riderGrp.position.y > -5) reqId = requestAnimationFrame(loop); 
-                    return;
-                }
-
-                if(!play) return;
-
-                lines.forEach(m => { m.position.x -= speed; if(m.position.x < -20) m.position.x += 40; });
-
-                if(sliding) {
-                    slideTimer--; if(slideTimer <= 0) sliding = false;
-                    riderGrp.rotation.z = -Math.PI / 2.2; riderGrp.position.y = -0.5; riderGrp.position.x = -0.4;
-                } else {
-                    riderGrp.rotation.z = 0; riderGrp.position.y = 0; riderGrp.position.x = 0;
-                }
-
-                py += vy;
-                if(py > 0) vy -= gravity; else { py = 0; vy = 0; }
-                playerGrp.position.y = 0.5 + py;
-
-                fWheel.rotation.z -= speed * 2; bWheel.rotation.z -= speed * 2;
-                
-                score++;
-                if(score % 5 === 0) document.getElementById('bj-score').textContent = Math.floor(score/5);
-
-                if(time - lastT > nextSpawnDelay) {
-                    const isBird = Math.random() > 0.5;
-                    const obsMesh = new THREE.Group();
-                    
-                    if (isBird) {
-                        const bBody = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 1), new THREE.MeshStandardMaterial({color: 0x333333}));
-                        bBody.rotation.z = Math.PI / 2;
-                        const bWing = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.1, 2), new THREE.MeshStandardMaterial({color: 0x111111}));
-                        bWing.position.y = 0.2;
-                        obsMesh.add(bBody); obsMesh.add(bWing); obsMesh.position.set(15, 2.5, 0); 
-                    } else {
-                        const wallGeo = new THREE.BoxGeometry(1, 1.4, 2);
-                        const wallMat = new THREE.MeshStandardMaterial({color: 0xb91c1c}); 
-                        const wall = new THREE.Mesh(wallGeo, wallMat);
-                        obsMesh.add(wall); obsMesh.position.set(15, 0.7, 0); 
-                    }
-                    
-                    scene.add(obsMesh); obstacles.push({ mesh: obsMesh }); lastT = time;
-                    nextSpawnDelay = Math.max(700, 1500 - score * 0.3) + Math.random() * 1200; 
-                }
-
-                let hit = false;
-                const playerBox = new THREE.Box3().setFromObject(playerGrp);
-                playerBox.expandByScalar(-0.25); 
-                if (sliding) playerBox.max.y = Math.min(playerBox.max.y, 1.2); 
-
-                for(let i = obstacles.length - 1; i >= 0; i--) {
-                    let obs = obstacles[i];
-                    obs.mesh.position.x -= speed;
-                    
-                    const obsBox = new THREE.Box3().setFromObject(obs.mesh);
-                    obsBox.expandByScalar(-0.2);
-                    
-                    if(playerBox.intersectsBox(obsBox)) hit = true;
-                    if(obs.mesh.position.x < -15) { scene.remove(obs.mesh); obstacles.splice(i, 1); }
-                }
-
-                if(hit) {
-                    play = false; over = true;
-                    document.getElementById('bj-ov').classList.remove('hidden');
-                    document.getElementById('bj-msg').textContent = '💥 으악!';
-                    document.getElementById('bj-msg').classList.remove('hidden');
-                    document.getElementById('bj-st').textContent = '다시타기';
-                }
-
-                renderer.render(scene, camera);
-                reqId = requestAnimationFrame(loop);
-            };
-
-            document.getElementById('bj-st').addEventListener('click', (e) => { e.stopPropagation(); start(); });
-            document.getElementById('bj-btn-jump').addEventListener('mousedown', (e)=>{e.preventDefault(); doJump();});
-            document.getElementById('bj-btn-jump').addEventListener('touchstart', (e)=>{e.preventDefault(); doJump();}, {passive:false});
-            document.getElementById('bj-btn-slide').addEventListener('mousedown', (e)=>{e.preventDefault(); doSlide();});
-            document.getElementById('bj-btn-slide').addEventListener('touchstart', (e)=>{e.preventDefault(); doSlide();}, {passive:false});
-
-            const handleTouch = (e) => {
-                if(e.target.tagName === 'BUTTON' || e.target.closest('button')) return;
-                e.preventDefault(); doJump(); 
-            };
-            canvasContainer.addEventListener('mousedown', handleTouch);
-            canvasContainer.addEventListener('touchstart', handleTouch, {passive:false});
-
-            const keydown = (e) => {
-                if(!play) return;
-                if(['Space','ArrowUp','ArrowDown'].includes(e.code)) e.preventDefault();
-                if(e.code==='Space' || e.code==='ArrowUp') doJump();
-                if(e.code==='ArrowDown') doSlide();
-            };
-            window.addEventListener('keydown', keydown);
-            
-            const resizeObs = new ResizeObserver(() => {
-                if(canvasContainer.clientWidth === 0) return;
-                camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
-                camera.updateProjectionMatrix();
-                renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
-                renderer.render(scene, camera);
-            });
-            resizeObs.observe(canvasContainer);
-            renderer.render(scene, camera);
-
-            return () => { 
-                cancelAnimationFrame(reqId); window.removeEventListener('keydown', keydown);
-                canvasContainer.removeEventListener('mousedown', handleTouch);
-                canvasContainer.removeEventListener('touchstart', handleTouch);
-                resizeObs.disconnect(); renderer.dispose();
-                scene.traverse(obj => { if (obj.geometry) obj.geometry.dispose(); if (obj.material) obj.material.dispose(); });
-            };
+            return () => {};
         };
 
         const mountMotorcycle = (container) => {
@@ -2410,12 +2197,12 @@
             { id: 'jump', title: '점프점프', icon: 'person-standing', color: 'bg-sky-100 text-sky-600', mount: mountJump },
             { id: 'bomb', title: '폭탄 피하기', icon: 'bomb', color: 'bg-slate-200 text-slate-700', mount: mountBomb },
             { id: 'typing', title: '단어 타자', icon: 'keyboard', color: 'bg-indigo-100 text-indigo-600', mount: mountTyping },
-            { id: 'racing', title: '프리 드라이브', icon: 'car-front', color: 'bg-yellow-100 text-yellow-600', mount: mountRacing },
+            { id: 'freedrive', title: '프리 드라이브', icon: 'car-front', color: 'bg-yellow-100 text-yellow-600', mount: mountRacing },
             { id: 'snake', title: '스네이크(NPC)', icon: 'bug', color: 'bg-lime-100 text-lime-700', mount: mountSnake },
             { id: '2048', title: '2048', icon: 'layout-grid', color: 'bg-amber-100 text-amber-800', mount: mount2048 },
             { id: 'breakout', title: '벽돌 깨기', icon: 'layout-template', color: 'bg-rose-100 text-rose-700', mount: mountBreakout },
             { id: 'timing', title: '타이밍 맞추기', icon: 'crosshair', color: 'bg-indigo-100 text-indigo-700', mount: mountTiming },
-            { id: 'bikejump', title: '픽시 자전거 3D', icon: 'bike', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump },
+            { id: 'fixie', title: '픽시 자전거', icon: 'bike', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump },
             { id: 'motorcycle', title: '오토바이 3D', icon: 'gauge', color: 'bg-orange-100 text-orange-700', mount: mountMotorcycle },
         ];
 
