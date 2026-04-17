@@ -24,6 +24,15 @@
         /* 숨김 처리 유틸 */
         .hidden { display: none !important; }
         
+        /* 공지사항 스크롤 애니메이션 */
+        @keyframes scrollText {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(-100%); }
+        }
+        .scrolling-text {
+            animation: scrollText 12s linear infinite;
+        }
+
         /* 게임 컨테이너 높이 꽉 차게 설정 (iframe 용) */
         #game-container { height: calc(100vh - 70px); }
     </style>
@@ -51,7 +60,7 @@
                 <i data-lucide="gamepad-2" class="w-12 h-12 text-indigo-500"></i>
                 HASI!
             </h1>
-            <p class="text-slate-500 font-medium text-lg">다양한 24가지 미니게임을 즐겨보세요</p>
+            <p class="text-slate-500 font-medium text-lg">다양한 미니게임을 즐겨보세요</p>
         </header>
 
         <!-- 공지사항 배너 -->
@@ -59,7 +68,9 @@
             <div class="bg-indigo-100 border-l-4 border-indigo-500 p-4 rounded-r-2xl flex justify-between items-center shadow-sm">
                 <div class="flex items-center w-full overflow-hidden">
                     <i data-lucide="megaphone" class="w-6 h-6 text-indigo-600 mr-3 shrink-0"></i>
-                    <marquee id="notice-marquee" class="text-indigo-900 font-bold text-lg" scrollamount="6">환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 ￦ 또는 Delete 키를 누르세요)</marquee>
+                    <div id="notice-container" class="flex-1 overflow-hidden whitespace-nowrap relative flex items-center">
+                        <span id="notice-text" class="text-indigo-900 font-bold text-lg inline-block">하시</span>
+                    </div>
                 </div>
                 <button id="admin-edit-btn" onclick="openAdminEdit()" class="hidden ml-4 shrink-0 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition shadow-md whitespace-nowrap">공지 수정</button>
             </div>
@@ -140,13 +151,35 @@
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
 
         // 전역 상태
-        window.currentNotice = "환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 ￦ 또는 Delete 키를 누르세요)";
+        window.currentNotice = "하시";
         window.isAdmin = false;
         window.currentCleanup = null;
         let currentUser = null;
         let db = null;
         let noticeRef = null;
         let auth = null;
+
+        // 공지사항 표시 업데이트 함수 (길면 스크롤)
+        window.updateNoticeDisplay = (text) => {
+            const container = document.getElementById('notice-container');
+            const textEl = document.getElementById('notice-text');
+            if(!container || !textEl) return;
+            
+            textEl.textContent = text;
+            textEl.classList.remove('scrolling-text');
+            textEl.style.paddingLeft = '0';
+            
+            requestAnimationFrame(() => {
+                if (textEl.scrollWidth > container.clientWidth) {
+                    textEl.classList.add('scrolling-text');
+                    textEl.style.paddingLeft = '100%';
+                }
+            });
+        };
+
+        window.addEventListener('resize', () => {
+            if(window.currentNotice) window.updateNoticeDisplay(window.currentNotice);
+        });
 
         // 알림 메시지 (토스트) 함수
         window.showAlert = (msg) => {
@@ -193,7 +226,7 @@
                     onSnapshot(noticeRef, (docSnap) => {
                         if (docSnap.exists()) {
                             window.currentNotice = docSnap.data().text;
-                            document.getElementById('notice-marquee').textContent = window.currentNotice;
+                            window.updateNoticeDisplay(window.currentNotice);
                         }
                     }, (error) => {
                         console.warn("Firestore 규칙을 'allow read, write: if true;'로 설정하면 정상 동기화됩니다.");
@@ -204,6 +237,7 @@
             });
 
             initAuth();
+            window.updateNoticeDisplay(window.currentNotice); // 초기 공지 표시
 
         } catch(e) {
             console.error("Firebase 초기화 에러:", e);
@@ -281,7 +315,7 @@
             const inputVal = document.getElementById('notice-input').value;
             if(inputVal.trim() !== '') {
                 window.currentNotice = inputVal;
-                document.getElementById('notice-marquee').textContent = window.currentNotice; 
+                window.updateNoticeDisplay(window.currentNotice);
                 
                 if (db && currentUser) {
                     try {
@@ -2538,33 +2572,38 @@
         };
 
         // ==========================================
-        // 메인 데이터 & 라우팅 (전체 24개 게임)
+        // 메인 데이터 & 라우팅 (전체 24개 게임 - 한글/영어/숫자순 정렬)
         // ==========================================
         const GAMES = [
-            { id: 'tetris', title: '테트리스', icon: 'blocks', color: 'bg-indigo-100 text-indigo-600', mount: mountTetris },
-            { id: 'baseball', title: '숫자 야구', icon: 'trophy', color: 'bg-orange-100 text-orange-600', mount: mountBaseball },
+            // 1. 한글 (가나다순)
             { id: 'rps', title: '가위바위보', icon: 'scissors', color: 'bg-rose-100 text-rose-600', mount: mountRps },
             { id: 'fruit', title: '과일 받기', icon: 'apple', color: 'bg-emerald-100 text-emerald-600', mount: mountFruit },
-            { id: 'gather', title: '먹이 줍기', icon: 'target', color: 'bg-teal-100 text-teal-600', mount: mountGather },
-            { id: 'tictactoe', title: '틱택토', icon: 'grid-3x3', color: 'bg-blue-100 text-blue-600', mount: mountTicTacToe },
-            { id: 'memory', title: '카드 맞추기', icon: 'brain-circuit', color: 'bg-purple-100 text-purple-600', mount: mountMemory },
-            { id: 'whack', title: '두더지 잡기', icon: 'gamepad-2', color: 'bg-amber-100 text-amber-700', mount: mountWhack },
-            { id: 'reaction', title: '반응속도', icon: 'zap', color: 'bg-rose-100 text-rose-600', mount: mountReaction },
-            { id: 'math', title: '산수 퀴즈', icon: 'calculator', color: 'bg-cyan-100 text-cyan-600', mount: mountMath },
-            { id: 'clicker', title: '10초 광클', icon: 'mouse-pointer-click', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountClicker },
-            { id: 'color', title: '색깔 찾기', icon: 'palette', color: 'bg-pink-100 text-pink-600', mount: mountColor },
-            { id: 'simon', title: '패턴 기억', icon: 'list-ordered', color: 'bg-violet-100 text-violet-600', mount: mountSimon },
-            { id: 'jump3d', title: '3D 점프맵', icon: 'person-standing', color: 'bg-teal-100 text-teal-600', mount: mount3DJumpMap }, // 기존 2D 대신 3D 점프맵 할당
-            { id: 'bomb', title: '폭탄 피하기', icon: 'bomb', color: 'bg-slate-200 text-slate-700', mount: mountBomb },
             { id: 'typing', title: '단어 타자', icon: 'keyboard', color: 'bg-indigo-100 text-indigo-600', mount: mountTyping },
-            { id: 'freedrive', title: '프리 드라이브 (PC)', icon: 'car-front', color: 'bg-yellow-100 text-yellow-600', mount: mountRacing },
-            { id: 'snake', title: '스네이크 (NPC)', icon: 'bug', color: 'bg-lime-100 text-lime-700', mount: mountSnake },
-            { id: '2048', title: '2048', icon: 'layout-grid', color: 'bg-amber-100 text-amber-800', mount: mount2048 },
+            { id: 'whack', title: '두더지 잡기', icon: 'gamepad-2', color: 'bg-amber-100 text-amber-700', mount: mountWhack },
+            { id: 'gather', title: '먹이 줍기', icon: 'target', color: 'bg-teal-100 text-teal-600', mount: mountGather },
+            { id: 'reaction', title: '반응속도', icon: 'zap', color: 'bg-rose-100 text-rose-600', mount: mountReaction },
             { id: 'breakout', title: '벽돌 깨기', icon: 'layout-template', color: 'bg-rose-100 text-rose-700', mount: mountBreakout },
-            { id: 'timing', title: '타이밍 맞추기', icon: 'crosshair', color: 'bg-indigo-100 text-indigo-700', mount: mountTiming },
-            { id: 'fixie', title: '픽시 자전거 (PC)', icon: 'bike', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump },
+            { id: 'math', title: '산수 퀴즈', icon: 'calculator', color: 'bg-cyan-100 text-cyan-600', mount: mountMath },
+            { id: 'color', title: '색깔 찾기', icon: 'palette', color: 'bg-pink-100 text-pink-600', mount: mountColor },
+            { id: 'baseball', title: '숫자 야구', icon: 'trophy', color: 'bg-orange-100 text-orange-600', mount: mountBaseball },
+            { id: 'snake', title: '스네이크(NPC)', icon: 'bug', color: 'bg-lime-100 text-lime-700', mount: mountSnake },
             { id: 'motorcycle', title: '오토바이 3D', icon: 'gauge', color: 'bg-orange-100 text-orange-700', mount: mountMotorcycle },
-            { id: 'fps', title: 'FPS 서바이벌 (PC)', icon: 'swords', color: 'bg-red-100 text-red-600', mount: mountFps },
+            { id: 'memory', title: '카드 맞추기', icon: 'brain-circuit', color: 'bg-purple-100 text-purple-600', mount: mountMemory },
+            { id: 'timing', title: '타이밍 맞추기', icon: 'crosshair', color: 'bg-indigo-100 text-indigo-700', mount: mountTiming },
+            { id: 'tetris', title: '테트리스', icon: 'blocks', color: 'bg-indigo-100 text-indigo-600', mount: mountTetris },
+            { id: 'tictactoe', title: '틱택토', icon: 'grid-3x3', color: 'bg-blue-100 text-blue-600', mount: mountTicTacToe },
+            { id: 'simon', title: '패턴 기억', icon: 'list-ordered', color: 'bg-violet-100 text-violet-600', mount: mountSimon },
+            { id: 'bomb', title: '폭탄 피하기', icon: 'bomb', color: 'bg-slate-200 text-slate-700', mount: mountBomb },
+            { id: 'freedrive', title: '프리 드라이브(PC)', icon: 'car-front', color: 'bg-yellow-100 text-yellow-600', mount: mountRacing },
+            { id: 'fixie', title: '픽시 자전거(PC)', icon: 'bike', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump },
+            
+            // 2. 영어 (알파벳순)
+            { id: 'fps', title: 'FPS 서바이벌OPC)', icon: 'swords', color: 'bg-red-100 text-red-600', mount: mountFps },
+            
+            // 3. 숫자 (오름차순)
+            { id: 'clicker', title: '10초 광클', icon: 'mouse-pointer-click', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountClicker },
+            { id: '2048', title: '2048', icon: 'layout-grid', color: 'bg-amber-100 text-amber-800', mount: mount2048 },
+            { id: 'jump3d', title: '3D 점프맵', icon: 'person-standing', color: 'bg-teal-100 text-teal-600', mount: mount3DJumpMap },
         ];
 
         // 게임 메뉴 렌더링
