@@ -51,7 +51,7 @@
                 <i data-lucide="gamepad-2" class="w-12 h-12 text-indigo-500"></i>
                 HASI!
             </h1>
-            <p class="text-slate-500 font-medium">다양한 24가지 미니게임을 즐겨보세요</p>
+            <p class="text-slate-500 font-medium text-lg">다양한 24가지 미니게임을 즐겨보세요</p>
         </header>
 
         <!-- 공지사항 배너 -->
@@ -59,7 +59,7 @@
             <div class="bg-indigo-100 border-l-4 border-indigo-500 p-4 rounded-r-2xl flex justify-between items-center shadow-sm">
                 <div class="flex items-center w-full overflow-hidden">
                     <i data-lucide="megaphone" class="w-6 h-6 text-indigo-600 mr-3 shrink-0"></i>
-                    <marquee id="notice-marquee" class="text-indigo-900 font-bold text-lg" scrollamount="6">하시!</marquee>
+                    <marquee id="notice-marquee" class="text-indigo-900 font-bold text-lg" scrollamount="6">환영합니다! 원하시는 게임을 선택해서 즐겨보세요 🎮 (관리자 로그인은 ￦ 또는 Delete 키를 누르세요)</marquee>
                 </div>
                 <button id="admin-edit-btn" onclick="openAdminEdit()" class="hidden ml-4 shrink-0 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition shadow-md whitespace-nowrap">공지 수정</button>
             </div>
@@ -69,7 +69,7 @@
             <!-- 게임 카드들이 여기에 동적으로 생성됩니다 -->
         </div>
         
-        <footer class="mt-12 text-center text-slate-400 text-sm">
+        <footer class="mt-12 text-center text-slate-400 text-sm pb-8">
             <p id="user-info">연결 중...</p>
         </footer>
     </div>
@@ -85,7 +85,7 @@
             <div class="w-20"></div> <!-- 밸런스용 빈 공간 -->
         </header>
         
-        <main id="game-container" class="w-full bg-slate-50 relative flex flex-col items-center justify-center overflow-hidden">
+        <main id="game-container" class="w-full bg-slate-50 relative flex flex-col items-center justify-center p-4 overflow-hidden">
             <!-- 게임 내용이 여기에 마운트됩니다 -->
         </main>
     </div>
@@ -257,7 +257,7 @@
 
         window.attemptAdminLogin = () => {
             const pw = document.getElementById('admin-pw').value;
-            if (pw === '1234567890') {
+            if (pw === 'homerunentry9917@gmail.com') {
                 window.isAdmin = true;
                 window.closeAdminLogin();
                 document.getElementById('admin-edit-btn').classList.remove('hidden');
@@ -303,7 +303,7 @@
         };
 
         // ==========================================
-        // 미니게임 함수들 (23개)
+        // 미니게임 함수들 (24개)
         // ==========================================
 
         const mountRps = (container) => {
@@ -762,8 +762,8 @@
                 document.getElementById('wa-time').textContent = time;
                 const grid = document.getElementById('wa-grid');
                 grid.innerHTML = moles.map((m, i) => `
-                    <div data-idx="${i}" class="wa-hole w-full h-full bg-emerald-900 rounded-full relative overflow-hidden cursor-pointer border-4 border-emerald-950 shadow-inner">
-                        ${m ? '<div class="absolute bottom-0 left-1/2 -translate-x-1/2 text-6xl animate-bounce transform origin-bottom pb-1 pointer-events-none drop-shadow-lg">🦫</div>' : ''}
+                    <div data-idx="${i}" class="wa-hole w-full h-full bg-emerald-900 rounded-full relative overflow-hidden flex items-end justify-center cursor-pointer border-4 border-emerald-950 shadow-inner">
+                        ${m ? '<div class="text-6xl animate-bounce transform origin-bottom pb-1 pointer-events-none drop-shadow-lg">🦫</div>' : ''}
                     </div>
                 `).join('');
                 
@@ -773,7 +773,7 @@
                         const i = el.dataset.idx;
                         if(playing && moles[i]) { 
                             score += 10; moles[i] = false; 
-                            el.innerHTML = '<div class="absolute inset-0 flex items-center justify-center text-5xl pointer-events-none drop-shadow-lg">💥</div>';
+                            el.innerHTML = '<div class="text-5xl pb-4 pointer-events-none drop-shadow-lg">💥</div>';
                             setTimeout(render, 150);
                         }
                     };
@@ -1255,62 +1255,6 @@
             btns.forEach(b => b.addEventListener('touchstart', (e)=> { e.preventDefault(); b.dispatchEvent(new Event('mousedown')); }, {passive:false}));
 
             return () => {};
-        };
-
-        const mountJump = (container) => {
-            let play=false, score=0, over=false, dY=0, dVy=0, oX=100, reqId;
-
-            container.innerHTML = `
-                <div class="flex flex-col items-center w-full touch-none select-none mt-6">
-                    <div class="flex justify-between w-full max-w-sm px-4 mb-4 text-xl font-bold">
-                        <span class="bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100 text-slate-500 w-full text-center">점수: <span id="dj-score" class="text-teal-600 font-black">0</span></span>
-                    </div>
-                    <div id="dj-box" class="relative bg-gradient-to-b from-sky-100 to-sky-50 border-b-[6px] border-slate-800 w-full max-w-sm h-64 overflow-hidden cursor-pointer shadow-inner rounded-t-3xl">
-                        <div id="dj-ov" class="absolute inset-0 bg-slate-900/60 flex flex-col items-center justify-center z-10 text-white backdrop-blur-sm">
-                            <p id="dj-msg" class="text-3xl font-black mb-6 hidden text-rose-400">윽, 부딪혔다!</p>
-                            <button id="dj-st" class="bg-teal-500 hover:bg-teal-600 px-10 py-4 rounded-full font-bold text-xl shadow-xl transition-transform active:scale-95">시작하기</button>
-                        </div>
-                        <div id="dj-dino" class="absolute bottom-0 w-12 h-14 flex items-center justify-center text-5xl transition-transform z-10 drop-shadow-md" style="left:15%">🏃</div>
-                        <div id="dj-obs" class="absolute bottom-0 w-8 h-10 flex items-center justify-center text-4xl drop-shadow-md" style="left:100%">🌵</div>
-                    </div>
-                    <p class="mt-8 text-sm text-slate-500 font-medium bg-white px-6 py-3 rounded-full shadow-sm">화면을 터치하거나 스페이스바를 눌러 점프해!</p>
-                </div>
-            `;
-
-            const dino = document.getElementById('dj-dino'), obs = document.getElementById('dj-obs');
-            const jump = () => { if(play && dY===0) dVy=7; };
-
-            const loop = () => {
-                if(!play) return;
-                dY += dVy;
-                if(dY > 0) dVy -= 0.4; else { dY = 0; dVy = 0; }
-                oX -= 1.0 + (score*0.015);
-                if(oX < -10) { oX = 100 + Math.random()*80; score+=10; document.getElementById('dj-score').textContent = score; }
-
-                dino.style.transform = `translateY(-${dY*3}px)`; obs.style.left = `${oX}%`;
-
-                if(oX < 20 && oX > 10 && dY < 15) {
-                    play=false; over=true;
-                    document.getElementById('dj-ov').classList.remove('hidden');
-                    document.getElementById('dj-msg').classList.remove('hidden');
-                    document.getElementById('dj-st').textContent = '다시하기';
-                    return;
-                }
-                reqId = requestAnimationFrame(loop);
-            };
-
-            document.getElementById('dj-st').addEventListener('click', (e) => {
-                e.stopPropagation(); dY=0; dVy=0; oX=100; score=0; over=false; play=true;
-                document.getElementById('dj-score').textContent = 0; document.getElementById('dj-ov').classList.add('hidden');
-                reqId = requestAnimationFrame(loop);
-            });
-
-            const handleTouch = (e) => { if(e.target.tagName === 'BUTTON') return; e.preventDefault(); jump(); };
-            container.addEventListener('mousedown', handleTouch); container.addEventListener('touchstart', handleTouch, {passive:false});
-            const key = (e) => { if(e.code==='Space') { e.preventDefault(); jump(); } };
-            window.addEventListener('keydown', key);
-
-            return () => { cancelAnimationFrame(reqId); window.removeEventListener('keydown', key); container.removeEventListener('mousedown', handleTouch); container.removeEventListener('touchstart', handleTouch); };
         };
 
         const mountBomb = (container) => {
@@ -1941,6 +1885,389 @@
             return () => { cancelAnimationFrame(reqId); window.removeEventListener('keydown', keydown); container.removeEventListener('mousedown', bgClick); };
         };
 
+        const mount3DJumpMap = (container) => {
+            // UI 초기화
+            container.innerHTML = `
+                <div id="jump3d-container" class="absolute inset-0 bg-slate-900 overflow-hidden touch-none select-none">
+                    <div id="jump3d-canvas" class="absolute inset-0"></div>
+                    <!-- 크로스헤어 -->
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-10">
+                        <div class="w-1 h-4 bg-white/60 rounded-full absolute"></div>
+                        <div class="w-4 h-1 bg-white/60 rounded-full absolute"></div>
+                    </div>
+                    <!-- 상태 UI -->
+                    <div class="absolute top-4 left-4 text-white font-bold text-xl drop-shadow-md z-10 pointer-events-none">
+                        단계: <span id="jump3d-level" class="text-emerald-400">1</span>
+                    </div>
+                    <div id="jump3d-msg" class="absolute inset-0 flex items-center justify-center text-5xl font-black text-yellow-400 drop-shadow-[0_0_15px_rgba(250,204,21,0.8)] z-10 pointer-events-none hidden">
+                        CLEAR!
+                    </div>
+                    <!-- 시작 화면 / 마우스 잠금 유도 -->
+                    <div id="jump3d-start-overlay" class="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center z-20 text-white backdrop-blur-md cursor-pointer pointer-events-auto">
+                        <p class="text-4xl font-black mb-4 text-emerald-400 drop-shadow-lg">3D 점프맵</p>
+                        <p class="mb-2 text-slate-300 font-medium">PC: 화면을 클릭하여 마우스 잠금 (조작: WASD + 스페이스바)</p>
+                        <p class="mb-8 text-slate-300 font-medium hidden md:block">모바일: 화면이 작아 PC 환경을 권장합니다.</p>
+                        <p class="mb-8 text-slate-300 font-medium md:hidden">모바일: 좌측 조이스틱 + 우측 화면 드래그 + 점프 버튼</p>
+                        <button id="jump3d-start-btn" class="bg-emerald-600 hover:bg-emerald-700 px-10 py-4 rounded-full font-bold text-xl transition-colors shadow-xl">게임 시작</button>
+                    </div>
+                    <!-- 모바일 컨트롤 (터치 기기에서만 활성화) -->
+                    <div id="jump3d-mobile-controls" class="absolute inset-0 pointer-events-none z-10 hidden">
+                        <!-- 조이스틱 영역 -->
+                        <div id="jump3d-joy-zone" class="absolute bottom-8 left-8 w-32 h-32 bg-white/10 rounded-full pointer-events-auto border-2 border-white/20 flex items-center justify-center backdrop-blur-sm">
+                            <div id="jump3d-joy-knob" class="w-12 h-12 bg-white/40 rounded-full shadow-lg transition-transform duration-75"></div>
+                        </div>
+                        <!-- 점프 버튼 -->
+                        <div id="jump3d-jump-btn" class="absolute bottom-8 right-8 w-24 h-24 bg-white/10 rounded-full border-2 border-white/20 flex items-center justify-center pointer-events-auto active:bg-white/30 backdrop-blur-sm shadow-lg">
+                            <span class="text-white font-black text-lg">JUMP</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+
+            // 1. Three.js 씬 셋업
+            const canvasContainer = document.getElementById('jump3d-canvas');
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x87CEEB); 
+            scene.fog = new THREE.FogExp2(0x87CEEB, 0.025);
+
+            const camera = new THREE.PerspectiveCamera(75, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            canvasContainer.appendChild(renderer.domElement);
+
+            const ambient = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambient);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 10);
+            scene.add(dirLight);
+
+            // 2. 플레이어 상태 및 맵 데이터
+            let px = 0, py = 5, pz = 0;
+            let vx = 0, vy = 0, vz = 0;
+            let yaw = 0, pitch = 0;
+            let canJump = false;
+            const pSize = 0.4;   // 플레이어 반경 (AABB)
+            const pHeight = 1.6; // 플레이어 키
+            
+            let level = 1;
+            let platforms = [];
+            let goal = null;
+
+            // 3. 맵 생성기
+            const addPlatform = (x, y, z, w, h, d, colorHex, isGoal=false) => {
+                const geo = new THREE.BoxGeometry(w, h, d);
+                const mat = new THREE.MeshStandardMaterial({ color: colorHex });
+                if(isGoal) {
+                    mat.emissive = new THREE.Color(0xfacc15);
+                    mat.emissiveIntensity = 0.5;
+                }
+                const mesh = new THREE.Mesh(geo, mat);
+                mesh.position.set(x, y, z);
+                scene.add(mesh);
+                const plat = {
+                    minX: x - w/2, maxX: x + w/2,
+                    minY: y - h/2, maxY: y + h/2,
+                    minZ: z - d/2, maxZ: z + d/2,
+                    mesh: mesh, isGoal: isGoal
+                };
+                platforms.push(plat);
+                return plat;
+            };
+
+            const buildLevel = (lvl) => {
+                platforms.forEach(p => scene.remove(p.mesh));
+                platforms = [];
+                if(goal) scene.remove(goal.mesh);
+
+                // 시작 플랫폼
+                addPlatform(0, 0, 0, 10, 1, 10, 0x94a3b8);
+
+                // 징검다리 생성
+                let curX = 0, curY = 0, curZ = -6;
+                const count = 8 + lvl * 3;
+                for(let i=0; i<count; i++) {
+                    curX += (Math.random() - 0.5) * 8;
+                    curY += Math.random() * 2 + 0.2; // 조금씩 올라감
+                    curZ -= Math.random() * 4 + 4;   // 앞으로 나아감
+
+                    // 레벨이 오를수록 발판 크기 감소
+                    const w = Math.max(1.5, 4 - lvl * 0.2);
+                    const d = Math.max(1.5, 4 - lvl * 0.2);
+                    
+                    addPlatform(curX, curY, curZ, w, 1, d, 0x4ade80); 
+                }
+
+                // 도착 지점 (노란색)
+                curY += 2;
+                curZ -= 6;
+                goal = addPlatform(curX, curY, curZ, 8, 1, 8, 0xfacc15, true);
+
+                // 플레이어 초기화
+                px = 0; py = 3; pz = 0;
+                vx = 0; vy = 0; vz = 0;
+                yaw = 0; pitch = 0;
+            };
+
+            // 4. 입력 처리 (키보드 & 마우스 잠금)
+            const keys = {};
+            const keydown = (e) => keys[e.code] = true;
+            const keyup = (e) => keys[e.code] = false;
+            window.addEventListener('keydown', keydown);
+            window.addEventListener('keyup', keyup);
+
+            const startOverlay = document.getElementById('jump3d-start-overlay');
+            const startBtn = document.getElementById('jump3d-start-btn');
+            const mobileControls = document.getElementById('jump3d-mobile-controls');
+            const gameContainerUI = document.getElementById('jump3d-container');
+
+            const isTouch = ('ontouchstart' in window) || (navigator.maxTouchPoints > 0);
+
+            if(!isTouch) {
+                // 데스크톱: Pointer Lock
+                startOverlay.addEventListener('click', () => {
+                    canvasContainer.requestPointerLock();
+                });
+                document.addEventListener('pointerlockchange', () => {
+                    if (document.pointerLockElement === canvasContainer) {
+                        startOverlay.classList.add('hidden');
+                    } else {
+                        startOverlay.classList.remove('hidden');
+                    }
+                });
+                canvasContainer.addEventListener('mousemove', (e) => {
+                    if (document.pointerLockElement === canvasContainer) {
+                        yaw -= e.movementX * 0.002;
+                        pitch -= e.movementY * 0.002;
+                        pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, pitch));
+                    }
+                });
+            } else {
+                // 모바일: 터치 UI 활성화
+                mobileControls.classList.remove('hidden');
+                startBtn.addEventListener('click', () => {
+                    startOverlay.classList.add('hidden');
+                });
+            }
+
+            // 5. 모바일 컨트롤 로직
+            let joyX = 0, joyY = 0;
+            let lookTouchId = null;
+            let lastLookX = 0, lastLookY = 0;
+            const joyZone = document.getElementById('jump3d-joy-zone');
+            const joyKnob = document.getElementById('jump3d-joy-knob');
+            const jumpBtn = document.getElementById('jump3d-jump-btn');
+            let joyTouchId = null;
+            let joyCenterX = 0, joyCenterY = 0;
+
+            if (isTouch) {
+                // 조이스틱 (이동)
+                joyZone.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    const touch = e.changedTouches[0];
+                    joyTouchId = touch.identifier;
+                    const rect = joyZone.getBoundingClientRect();
+                    joyCenterX = rect.left + rect.width/2;
+                    joyCenterY = rect.top + rect.height/2;
+                    updateJoystick(touch);
+                }, {passive: false});
+
+                joyZone.addEventListener('touchmove', (e) => {
+                    e.preventDefault();
+                    for(let i=0; i<e.changedTouches.length; i++) {
+                        if(e.changedTouches[i].identifier === joyTouchId) updateJoystick(e.changedTouches[i]);
+                    }
+                }, {passive: false});
+
+                const joyEnd = (e) => {
+                    for(let i=0; i<e.changedTouches.length; i++) {
+                        if(e.changedTouches[i].identifier === joyTouchId) {
+                            joyTouchId = null; joyX = 0; joyY = 0;
+                            joyKnob.style.transform = `translate(0px, 0px)`;
+                        }
+                    }
+                };
+                joyZone.addEventListener('touchend', joyEnd);
+                joyZone.addEventListener('touchcancel', joyEnd);
+
+                const updateJoystick = (touch) => {
+                    let dx = touch.clientX - joyCenterX;
+                    let dy = touch.clientY - joyCenterY;
+                    const maxDist = 32; 
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    if(dist > maxDist) { dx = (dx/dist) * maxDist; dy = (dy/dist) * maxDist; }
+                    joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
+                    joyX = dx / maxDist; 
+                    joyY = dy / maxDist; 
+                };
+
+                // 점프 버튼
+                jumpBtn.addEventListener('touchstart', (e) => {
+                    e.preventDefault();
+                    if(canJump) { vy = 0.35; canJump = false; }
+                    jumpBtn.classList.add('bg-white/30');
+                }, {passive: false});
+                jumpBtn.addEventListener('touchend', (e) => {
+                    e.preventDefault();
+                    jumpBtn.classList.remove('bg-white/30');
+                });
+
+                // 화면 드래그 (시야 전환)
+                gameContainerUI.addEventListener('touchstart', (e) => {
+                    if(e.target.closest('#jump3d-mobile-controls') || e.target.closest('#jump3d-start-overlay')) return;
+                    const touch = e.changedTouches[0];
+                    lookTouchId = touch.identifier;
+                    lastLookX = touch.clientX; lastLookY = touch.clientY;
+                }, {passive: false});
+
+                gameContainerUI.addEventListener('touchmove', (e) => {
+                    if(lookTouchId !== null) {
+                        for(let i=0; i<e.changedTouches.length; i++) {
+                            if(e.changedTouches[i].identifier === lookTouchId) {
+                                const touch = e.changedTouches[i];
+                                yaw -= (touch.clientX - lastLookX) * 0.005;
+                                pitch -= (touch.clientY - lastLookY) * 0.005;
+                                pitch = Math.max(-Math.PI/2 + 0.1, Math.min(Math.PI/2 - 0.1, pitch));
+                                lastLookX = touch.clientX; lastLookY = touch.clientY;
+                            }
+                        }
+                    }
+                }, {passive: false});
+
+                const lookEnd = (e) => {
+                    if(lookTouchId !== null) {
+                        for(let i=0; i<e.changedTouches.length; i++) {
+                            if(e.changedTouches[i].identifier === lookTouchId) lookTouchId = null;
+                        }
+                    }
+                };
+                gameContainerUI.addEventListener('touchend', lookEnd);
+                gameContainerUI.addEventListener('touchcancel', lookEnd);
+            }
+
+            // 6. 메인 루프 (물리 & 렌더링)
+            let reqId;
+            let gameState = 'playing';
+
+            const loop = () => {
+                if (startOverlay.classList.contains('hidden') && gameState === 'playing') {
+                    // 키보드/조이스틱 입력 백터
+                    let moveZ = 0, moveX = 0;
+                    if(keys['KeyW'] || keys['ArrowUp']) moveZ -= 1;
+                    if(keys['KeyS'] || keys['ArrowDown']) moveZ += 1;
+                    if(keys['KeyA'] || keys['ArrowLeft']) moveX -= 1;
+                    if(keys['KeyD'] || keys['ArrowRight']) moveX += 1;
+
+                    if(isTouch) { moveX += joyX; moveZ += joyY; }
+
+                    const len = Math.sqrt(moveX*moveX + moveZ*moveZ);
+                    if(len > 0) { moveX /= len; moveZ /= len; }
+
+                    // 카메라가 바라보는 방향 기준(yaw)으로 이동 가속도 적용
+                    const speed = 0.015; // 가속도
+                    const s = Math.sin(yaw), c = Math.cos(yaw);
+                    const accX = (moveX * c + moveZ * s) * speed;
+                    const accZ = (-moveX * s + moveZ * c) * speed;
+
+                    vx += accX;
+                    vz += accZ;
+
+                    // 마찰력 (공중에서는 덜 미끄러짐)
+                    const friction = canJump ? 0.8 : 0.95;
+                    vx *= friction;
+                    vz *= friction;
+
+                    // 점프 (키보드)
+                    if(keys['Space'] && canJump) {
+                        vy = 0.35; // 점프력
+                        canJump = false;
+                    }
+
+                    // 중력 적용
+                    vy -= 0.015;
+
+                    px += vx; py += vy; pz += vz;
+
+                    // AABB 충돌 처리
+                    canJump = false;
+                    let onGoal = false;
+                    for(let plat of platforms) {
+                        // X, Z축 겹침 확인
+                        if(px + pSize > plat.minX && px - pSize < plat.maxX &&
+                           pz + pSize > plat.minZ && pz - pSize < plat.maxZ) {
+                            
+                            // 위에서 아래로 떨어질 때 (바닥 충돌)
+                            if(vy <= 0 && py - pHeight/2 >= plat.maxY + vy - 0.2 && py - pHeight/2 <= plat.maxY + 0.2) {
+                                py = plat.maxY + pHeight/2;
+                                vy = 0;
+                                canJump = true;
+                                if(plat.isGoal) onGoal = true;
+                            }
+                            // 아래서 위로 올라갈 때 (천장 충돌)
+                            else if(vy > 0 && py + pHeight/2 <= plat.minY + vy + 0.2 && py + pHeight/2 >= plat.minY - 0.2) {
+                                py = plat.minY - pHeight/2;
+                                vy = 0;
+                            }
+                        }
+                    }
+
+                    // 카메라 업데이트 (1인칭 시점)
+                    camera.position.set(px, py + pHeight/2 - 0.2, pz);
+                    const euler = new THREE.Euler(pitch, yaw, 0, 'YXZ');
+                    camera.quaternion.setFromEuler(euler);
+
+                    // 낙사 처리
+                    if(py < -15) {
+                        px = 0; py = 3; pz = 0;
+                        vx = 0; vy = 0; vz = 0;
+                    }
+
+                    // 클리어 처리
+                    if(onGoal) {
+                        gameState = 'clear';
+                        document.getElementById('jump3d-msg').classList.remove('hidden');
+                        setTimeout(() => {
+                            level++;
+                            document.getElementById('jump3d-level').textContent = level;
+                            buildLevel(level);
+                            gameState = 'playing';
+                            document.getElementById('jump3d-msg').classList.add('hidden');
+                        }, 2000);
+                    }
+                }
+
+                renderer.render(scene, camera);
+                reqId = requestAnimationFrame(loop);
+            };
+
+            // 초기 레벨 생성 및 루프 시작
+            buildLevel(level);
+            reqId = requestAnimationFrame(loop);
+
+            // 창 크기 변경 대응
+            const resizeObs = new ResizeObserver(() => {
+                if(canvasContainer.clientWidth === 0) return;
+                camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+            });
+            resizeObs.observe(canvasContainer);
+
+            // 클린업 함수
+            return () => {
+                cancelAnimationFrame(reqId);
+                window.removeEventListener('keydown', keydown);
+                window.removeEventListener('keyup', keyup);
+                resizeObs.disconnect();
+                renderer.dispose();
+                scene.traverse(obj => {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) obj.material.dispose();
+                });
+                if(document.pointerLockElement === canvasContainer) document.exitPointerLock();
+            };
+        };
+
         const mountBikeJump = (container) => {
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full h-full pb-4">
@@ -2211,7 +2538,7 @@
         };
 
         // ==========================================
-        // 메인 데이터 & 라우팅 (전체 24개 게임 완벽 복원)
+        // 메인 데이터 & 라우팅 (전체 24개 게임)
         // ==========================================
         const GAMES = [
             { id: 'tetris', title: '테트리스', icon: 'blocks', color: 'bg-indigo-100 text-indigo-600', mount: mountTetris },
@@ -2227,17 +2554,17 @@
             { id: 'clicker', title: '10초 광클', icon: 'mouse-pointer-click', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountClicker },
             { id: 'color', title: '색깔 찾기', icon: 'palette', color: 'bg-pink-100 text-pink-600', mount: mountColor },
             { id: 'simon', title: '패턴 기억', icon: 'list-ordered', color: 'bg-violet-100 text-violet-600', mount: mountSimon },
-            { id: 'jump', title: '점프점프', icon: 'person-standing', color: 'bg-sky-100 text-sky-600', mount: mountJump },
+            { id: 'jump3d', title: '3D 점프맵', icon: 'person-standing', color: 'bg-teal-100 text-teal-600', mount: mount3DJumpMap }, // 기존 2D 대신 3D 점프맵 할당
             { id: 'bomb', title: '폭탄 피하기', icon: 'bomb', color: 'bg-slate-200 text-slate-700', mount: mountBomb },
             { id: 'typing', title: '단어 타자', icon: 'keyboard', color: 'bg-indigo-100 text-indigo-600', mount: mountTyping },
-            { id: 'freedrive', title: '프리 드라이브(PC)', icon: 'car-front', color: 'bg-yellow-100 text-yellow-600', mount: mountRacing },
-            { id: 'snake', title: '스네이크(NPC)', icon: 'bug', color: 'bg-lime-100 text-lime-700', mount: mountSnake },
+            { id: 'freedrive', title: '프리 드라이브 (PC)', icon: 'car-front', color: 'bg-yellow-100 text-yellow-600', mount: mountRacing },
+            { id: 'snake', title: '스네이크 (NPC)', icon: 'bug', color: 'bg-lime-100 text-lime-700', mount: mountSnake },
             { id: '2048', title: '2048', icon: 'layout-grid', color: 'bg-amber-100 text-amber-800', mount: mount2048 },
             { id: 'breakout', title: '벽돌 깨기', icon: 'layout-template', color: 'bg-rose-100 text-rose-700', mount: mountBreakout },
             { id: 'timing', title: '타이밍 맞추기', icon: 'crosshair', color: 'bg-indigo-100 text-indigo-700', mount: mountTiming },
-            { id: 'fixie', title: '픽시 자전거(PC)', icon: 'bike', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump },
+            { id: 'fixie', title: '픽시 자전거 (PC)', icon: 'bike', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump },
             { id: 'motorcycle', title: '오토바이 3D', icon: 'gauge', color: 'bg-orange-100 text-orange-700', mount: mountMotorcycle },
-            { id: 'fps', title: 'FPS 서바이벌(PC)', icon: 'swords', color: 'bg-red-100 text-red-600', mount: mountFps },
+            { id: 'fps', title: 'FPS 서바이벌 (PC)', icon: 'swords', color: 'bg-red-100 text-red-600', mount: mountFps },
         ];
 
         // 게임 메뉴 렌더링
@@ -2273,6 +2600,16 @@
 
             const container = document.getElementById('game-container');
             container.innerHTML = '';
+            
+            // 전체 꽉 찬 화면이 필요한 3D 게임 처리 (패딩 제거)
+            if(id === 'jump3d') {
+                container.classList.remove('p-4');
+                container.classList.add('p-0');
+            } else {
+                container.classList.remove('p-0');
+                container.classList.add('p-4');
+            }
+
             window.currentCleanup = game.mount(container);
         };
 
