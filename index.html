@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>하시게임</title>
+    <title>하시 게임</title>
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons (CDN) -->
@@ -51,7 +51,7 @@
                 <i data-lucide="gamepad-2" class="w-12 h-12 text-indigo-500"></i>
                 HASI!
             </h1>
-            <p class="text-slate-500 font-medium">다양한 미니게임을 즐겨보세요</p>
+            <p class="text-slate-500 font-medium">다양한 24가지 미니게임을 즐겨보세요</p>
         </header>
 
         <!-- 공지사항 배너 -->
@@ -59,7 +59,7 @@
             <div class="bg-indigo-100 border-l-4 border-indigo-500 p-4 rounded-r-2xl flex justify-between items-center shadow-sm">
                 <div class="flex items-center w-full overflow-hidden">
                     <i data-lucide="megaphone" class="w-6 h-6 text-indigo-600 mr-3 shrink-0"></i>
-                    <marquee id="notice-marquee" class="text-indigo-900 font-bold text-lg" scrollamount="6">하시게임</marquee>
+                    <marquee id="notice-marquee" class="text-indigo-900 font-bold text-lg" scrollamount="6">하시!</marquee>
                 </div>
                 <button id="admin-edit-btn" onclick="openAdminEdit()" class="hidden ml-4 shrink-0 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition shadow-md whitespace-nowrap">공지 수정</button>
             </div>
@@ -1440,7 +1440,21 @@
             document.getElementById('tp-st').addEventListener('click', start);
             document.getElementById('tp-in').addEventListener('input', (e) => {
                 if(!play) return;
-                if(e.target.value === cw) { score += cw.length*10; document.getElementById('tp-score').textContent=score; e.target.value=''; next(); }
+                
+                // 양끝 공백을 무시하여 스페이스바를 눌러서 자연스럽게 한글 조합을 끝낼 수 있도록 처리
+                const val = e.target.value.trim();
+                
+                if(val === cw) { 
+                    score += cw.length * 10; 
+                    document.getElementById('tp-score').textContent = score; 
+                    e.target.value = ''; 
+                    
+                    // 한글 입력기(IME) 버그 해결: 포커스를 뗐다 다시 줘서 남아있는 글자 조합 버퍼 강제 초기화
+                    e.target.blur();
+                    e.target.focus();
+                    
+                    next(); 
+                }
             });
             return () => clearInterval(tId);
         };
@@ -2221,7 +2235,7 @@
             { id: '2048', title: '2048', icon: 'layout-grid', color: 'bg-amber-100 text-amber-800', mount: mount2048 },
             { id: 'breakout', title: '벽돌 깨기', icon: 'layout-template', color: 'bg-rose-100 text-rose-700', mount: mountBreakout },
             { id: 'timing', title: '타이밍 맞추기', icon: 'crosshair', color: 'bg-indigo-100 text-indigo-700', mount: mountTiming },
-            { id: 'fixie', title: '픽시 자전거(PC)', icon: 'bike', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump },
+            { id: 'fixie', title: '픽시 자전거((PC)', icon: 'bike', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump },
             { id: 'motorcycle', title: '오토바이 3D', icon: 'gauge', color: 'bg-orange-100 text-orange-700', mount: mountMotorcycle },
             { id: 'fps', title: 'FPS 서바이벌(PC)', icon: 'swords', color: 'bg-red-100 text-red-600', mount: mountFps },
         ];
