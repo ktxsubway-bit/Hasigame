@@ -45,7 +45,7 @@
     <!-- 로딩 화면 -->
     <div id="loading-overlay" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-white transition-opacity duration-300">
         <div class="w-12 h-12 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-        <p class="mt-4 text-slate-600 font-medium">데이터를 불러오는 중입니다...</p>
+        <p class="mt-4 text-slate-600 font-medium">Now Loading...</p>
     </div>
 
     <!-- 전체 화면 버튼 -->
@@ -2562,10 +2562,36 @@
                         frameborder="0" 
                         allow="autoplay; fullscreen; keyboard" 
                         allowfullscreen="true"
+                        class="w-full h-full border-0"
                     ></iframe>
+                    <!-- 원작자 표시 오버레이 -->
+                    <div id="fps-credit" class="absolute top-6 left-1/2 transform -translate-x-1/2 z-10 bg-slate-900/90 px-8 py-4 rounded-3xl border border-slate-700 text-center transition-opacity duration-1000 opacity-100 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
+                        <p class="text-xl font-black text-red-500 tracking-widest mb-1 drop-shadow-md">DEADSHOT.IO</p>
+                        <p class="text-base text-slate-300 font-medium mb-2">원작자: <span class="text-white font-black tracking-wide">TreeTeam</span></p>
+                        <a href="https://deadshot.io" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors block pointer-events-auto bg-slate-800/50 py-1.5 px-4 rounded-full">
+                            공식 사이트: deadshot.io
+                        </a>
+                    </div>
                 </div>
             `;
-            return () => {};
+
+            // 4초 뒤에 서서히 흐려지는 로직
+            const fadeTimer = setTimeout(() => {
+                const creditEl = document.getElementById('fps-credit');
+                if(creditEl) {
+                    // 투명도를 0으로 변경해 CSS transition 애니메이션 실행
+                    creditEl.classList.remove('opacity-100');
+                    creditEl.classList.add('opacity-0');
+                    
+                    // 게임 클릭을 방해하지 않도록 완전히 투명해진 뒤 이벤트 무시 설정
+                    setTimeout(() => {
+                        if(creditEl) creditEl.classList.add('pointer-events-none');
+                    }, 1000);
+                }
+            }, 4000);
+
+            // 컴포넌트 언마운트 시 타이머 정리
+            return () => clearTimeout(fadeTimer);
         };
 
         const mountUfo = (container) => {
@@ -2973,7 +2999,7 @@
         const GAMES = [
             // 1. 한글 (가나다순)
             { id: 'rps', title: '가위바위보', icon: 'scissors', color: 'bg-rose-100 text-rose-600', mount: mountRps },
-            { id: 'airstrike', title: '공습게임(PC)', icon: 'plane', color: 'bg-zinc-100 text-zinc-600', mount: mountAirstrike },
+            { id: 'airstrike', title: '하늘 지키기 대작전(PC)', icon: 'plane', color: 'bg-zinc-100 text-zinc-600', mount: mountAirstrike },
             { id: 'fruit', title: '과일 받기', icon: 'apple', color: 'bg-emerald-100 text-emerald-600', mount: mountFruit },
             { id: 'typing', title: '단어 타자', icon: 'keyboard', color: 'bg-indigo-100 text-indigo-600', mount: mountTyping },
             { id: 'fps', title: '데드샷.io(PC)', icon: 'swords', color: 'bg-red-100 text-red-600', mount: mountFps },
@@ -2983,7 +3009,7 @@
             { id: 'breakout', title: '벽돌 깨기', icon: 'layout-template', color: 'bg-rose-100 text-rose-700', mount: mountBreakout },
             { id: 'math', title: '산수 퀴즈', icon: 'calculator', color: 'bg-cyan-100 text-cyan-600', mount: mountMath },
             { id: 'color', title: '색깔 찾기', icon: 'palette', color: 'bg-pink-100 text-pink-600', mount: mountColor },
-            { id: 'subway', title: '서브웨어 런(PC)', icon: 'train', color: 'bg-cyan-100 text-cyan-600', mount: mountSubwayRun },
+            { id: 'subway', title: '서브웨이 런', icon: 'train', color: 'bg-cyan-100 text-cyan-600', mount: mountSubwayRun },
             { id: 'baseball', title: '숫자 야구', icon: 'trophy', color: 'bg-orange-100 text-orange-600', mount: mountBaseball },
             { id: 'snake', title: '스네이크(NPC)', icon: 'bug', color: 'bg-lime-100 text-lime-700', mount: mountSnake },
             { id: 'penalty', title: '승부차기', icon: 'flag', color: 'bg-green-100 text-green-700', mount: mountPenaltyKick },
