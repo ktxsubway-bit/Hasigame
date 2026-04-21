@@ -3059,6 +3059,9 @@
             }
             document.getElementById('game-screen').classList.add('hidden');
             document.getElementById('menu-screen').classList.remove('hidden');
+            
+            // 화면 및 iframe 등 잔여 리소스 완전 초기화 (게임 소리 계속 나는 문제 해결)
+            document.getElementById('game-container').innerHTML = '';
         };
     </script>
 </body>
