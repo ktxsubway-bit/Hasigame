@@ -2553,47 +2553,26 @@
         };
 
         const mountFps = (container) => {
-            container.innerHTML = `
-                <div style="width: 100%; height: 100%; overflow: hidden;" class="absolute inset-0 bg-black">
-                    <iframe 
-                        src="https://deadshot.io" 
-                        width="100%" 
-                        height="100%" 
-                        frameborder="0" 
-                        allow="autoplay; fullscreen; keyboard" 
-                        allowfullscreen="true"
-                        class="w-full h-full border-0"
-                    ></iframe>
-                    <!-- 원작자 표시 오버레이 -->
-                    <div id="fps-credit" class="absolute top-6 left-1/2 transform -translate-x-1/2 z-10 bg-slate-900/90 px-8 py-4 rounded-3xl border border-slate-700 text-center transition-opacity duration-1000 opacity-100 shadow-[0_0_30px_rgba(0,0,0,0.8)]">
-                        <p class="text-xl font-black text-red-500 tracking-widest mb-1 drop-shadow-md">DEADSHOT.IO</p>
-                        <p class="text-base text-slate-300 font-medium mb-2">원작자: <span class="text-white font-black tracking-wide">TreeTeam</span></p>
-                        <a href="https://deadshot.io" target="_blank" rel="noopener noreferrer" class="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors block pointer-events-auto bg-slate-800/50 py-1.5 px-4 rounded-full">
-                            공식 사이트: deadshot.io
-                        </a>
-                    </div>
-                </div>
-            `;
+    // 원작자 표시 레이어를 제거하고 iframe만 남김
+    container.innerHTML = `
+        <div style="width: 100%; height: 100%; overflow: hidden;" class="absolute inset-0 bg-black">
+            <iframe 
+                src="https://ktxsubway-bit.github.io/hasigamefps" 
+                width="100%" 
+                height="100%" 
+                frameborder="0" 
+                allow="autoplay; fullscreen; keyboard" 
+                allowfullscreen="true"
+                class="w-full h-full border-0"
+            ></iframe>
+        </div>
+    `;
 
-            // 4초 뒤에 서서히 흐려지는 로직
-            const fadeTimer = setTimeout(() => {
-                const creditEl = document.getElementById('fps-credit');
-                if(creditEl) {
-                    // 투명도를 0으로 변경해 CSS transition 애니메이션 실행
-                    creditEl.classList.remove('opacity-100');
-                    creditEl.classList.add('opacity-0');
-                    
-                    // 게임 클릭을 방해하지 않도록 완전히 투명해진 뒤 이벤트 무시 설정
-                    setTimeout(() => {
-                        if(creditEl) creditEl.classList.add('pointer-events-none');
-                    }, 1000);
-                }
-            }, 4000);
-
-            // 컴포넌트 언마운트 시 타이머 정리
-            return () => clearTimeout(fadeTimer);
-        };
-
+    // 타이머와 오버레이 제어 로직이 사라졌으므로 단순 초기화 함수만 반환하거나 생략 가능
+    return () => {
+        container.innerHTML = '';
+    };
+};
         const mountUfo = (container) => {
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full h-full pb-4">
@@ -3002,7 +2981,7 @@
             { id: 'airstrike', title: '공습 대작전(PC)', icon: 'plane', color: 'bg-zinc-100 text-zinc-600', mount: mountAirstrike },
             { id: 'fruit', title: '과일 받기', icon: 'apple', color: 'bg-emerald-100 text-emerald-600', mount: mountFruit },
             { id: 'typing', title: '단어 타자', icon: 'keyboard', color: 'bg-indigo-100 text-indigo-600', mount: mountTyping },
-            // { id: 'fps', title: '데드샷.io', icon: 'swords', color: 'bg-red-100 text-red-600', mount: mountFps },
+            { id: 'fps', title: '데드샷 물총.io', icon: 'swords', color: 'bg-red-100 text-red-600', mount: mountFps },
             { id: 'whack', title: '두더지 잡기', icon: 'gamepad-2', color: 'bg-amber-100 text-amber-700', mount: mountWhack },
             { id: 'gather', title: '먹이 줍기', icon: 'target', color: 'bg-teal-100 text-teal-600', mount: mountGather },
             { id: 'reaction', title: '반응속도', icon: 'zap', color: 'bg-rose-100 text-rose-600', mount: mountReaction },
