@@ -337,7 +337,7 @@
         };
 
         // ==========================================
-        // 미니게임 함수들 (27개)
+        // 미니게임 함수들 (28개)
         // ==========================================
 
         const mountRps = (container) => {
@@ -2615,6 +2615,345 @@ const mountDeadshot = (container) => {
             return () => {};
         };
 
+        /**
+ * HASI GAME PLATFORM IDENTIFIER
+ */
+const __app_id = "hasicraft-build-edition";
+
+/**
+ * 하시크래프트 메인 마운트 함수
+ * @param {HTMLElement} container - 게임이 렌더링될 DOM 컨테이너
+ */
+const mountHasiCraft = (container) => {
+    // --- 설정 및 상수 ---
+    const CHUNK_SIZE = 16;
+    const RENDER_DISTANCE = 2;
+    const PLAYER_HEIGHT = 1.8;
+    const COLLISION_RADIUS = 0.4;
+
+    // --- 데이터 ---
+    const blockData = [
+        { id: '🌿', color: 0x55aa55, name: '잔디' },
+        { id: '🟫', color: 0x8b4513, name: '흙' },
+        { id: '⬛', color: 0x555555, name: '조약돌' },
+        { id: '🧱', color: 0xaa4444, name: '붉은 벽돌' },
+        { id: '🪵', color: 0x5d4037, name: '참나무' },
+        { id: '🍂', color: 0x8d6e63, name: '나무 판자' },
+        { id: '💎', color: 0x00ffff, name: '다이아몬드', emissive: 0x002222 },
+        { id: '💡', color: 0xffffff, name: '조명', emissive: 0xffffff },
+        { id: '🟦', color: 0x4444ff, name: '유리', opacity: 0.6, transparent: true },
+        { id: '🌌', color: 0x111111, name: '기반암', isBedrock: true }
+    ];
+
+    // --- 상태 관리 ---
+    let state = {
+        hotbar: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+        selectedIdx: 0,
+        inventoryOpen: false,
+        controlsEnabled: false
+    };
+
+    // --- UI 구조 주입 ---
+    container.innerHTML = `
+        <div id="hasi-game-container" class="relative w-full h-full overflow-hidden bg-black font-sans">
+            <!-- 3D 캔버스 영역 -->
+            <div id="render-target" class="w-full h-full"></div>
+
+            <!-- 크로스헤어 -->
+            <div id="crosshair" class="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white pointer-events-none text-2xl font-light" style="display:none">+</div>
+
+            <!-- 디버그 정보 -->
+            <div id="debug-info" class="fixed top-4 left-4 text-white text-xs bg-black/50 p-2 rounded pointer-events-none">Initializing...</div>
+
+            <!-- 하단 핫바 -->
+            <div class="fixed bottom-6 left-1/2 -translate-x-1/2 flex space-x-2 p-2 bg-black/40 backdrop-blur-md rounded-2xl border border-white/10 shadow-2xl" id="hotbar-container">
+                <!-- JS에서 동적 생성 -->
+            </div>
+
+            <!-- 인벤토리 오버레이 -->
+            <div id="inventory-overlay" class="fixed inset-0 bg-slate-900/90 backdrop-blur-xl items-center justify-center z-50" style="display:none">
+                <div class="bg-white/10 p-8 rounded-3xl border border-white/20 max-w-2xl w-full mx-4 shadow-2xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-white text-2xl font-black">INVENTORY</h2>
+                        <button id="close-inv" class="text-white/50 hover:text-white transition-colors text-xl">✕</button>
+                    </div>
+                    <div id="inventory-grid" class="grid grid-cols-5 sm:grid-cols-8 gap-3 max-h-[60vh] overflow-y-auto pr-2 custom-scroll">
+                        <!-- JS에서 동적 생성 -->
+                    </div>
+                    <p class="text-white/40 text-xs mt-6 text-center italic">슬롯을 선택한 상태에서 블록을 클릭해 교체하세요 (Esc/E로 닫기)</p>
+                </div>
+            </div>
+
+            <!-- 시작 오버레이 -->
+            <div id="start-overlay" class="fixed inset-0 flex flex-col items-center justify-center bg-slate-900/80 backdrop-blur-sm z-40 transition-all">
+                <h1 class="text-6xl font-black text-white mb-2 tracking-tighter italic">HASI<span class="text-indigo-400">CRAFT</span></h1>
+                <p class="text-indigo-200/60 mb-10 text-lg uppercase tracking-widest">Build Your Dream</p>
+                <button id="btn-start" class="px-12 py-5 bg-indigo-500 hover:bg-indigo-400 text-white rounded-full font-bold text-xl shadow-lg shadow-indigo-500/30 transition-all hover:scale-105 active:scale-95">시작하기</button>
+                <div class="mt-12 grid grid-cols-3 gap-8 text-white/50 text-xs text-center">
+                    <div><span class="block font-bold text-white mb-1 text-sm">WASD</span>이동</div>
+                    <div><span class="block font-bold text-white mb-1 text-sm">CLICK</span>파괴/설치</div>
+                    <div><span class="block font-bold text-white mb-1 text-sm">E / INV</span>인벤토리</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // --- DOM 참조 ---
+    const target = container.querySelector('#render-target');
+    const hotbarEl = container.querySelector('#hotbar-container');
+    const invGridEl = container.querySelector('#inventory-grid');
+    const invOverlay = container.querySelector('#inventory-overlay');
+    const startOverlay = container.querySelector('#start-overlay');
+    const debugEl = container.querySelector('#debug-info');
+
+    // --- THREE.js 엔진 변수 ---
+    let scene, camera, renderer, clock, raycaster, collisionRaycaster;
+    let chunks = new Map();
+    let allBlocks = new Map();
+    let velocity = new THREE.Vector3();
+    let moveState = { f: false, b: false, l: false, r: false, jump: false, canJump: false };
+    
+    const boxGeo = new THREE.BoxGeometry(1, 1, 1);
+    const blockMaterials = blockData.map(d => new THREE.MeshStandardMaterial({ 
+        color: d.color, 
+        emissive: d.emissive || 0x000000,
+        transparent: d.transparent || false,
+        opacity: d.opacity || 1.0
+    }));
+
+    // --- UI 렌더링 함수 ---
+    const renderHotbar = () => {
+        hotbarEl.innerHTML = state.hotbar.map((idx, i) => `
+            <div class="hotbar-slot w-12 h-12 sm:w-14 sm:h-14 flex flex-col items-center justify-center rounded-xl transition-all border-2 
+                ${i === state.selectedIdx ? 'bg-indigo-500/40 border-indigo-400 shadow-[0_0_15px_rgba(129,140,248,0.5)]' : 'bg-white/5 border-transparent hover:bg-white/10'}"
+                data-idx="${i}">
+                <span class="text-2xl">${blockData[idx].id}</span>
+                <span class="text-[9px] text-white/50 font-bold">${i + 1}</span>
+            </div>
+        `).join('');
+    };
+
+    const renderInventory = () => {
+        invGridEl.innerHTML = blockData.map((b, i) => b.isBedrock ? '' : `
+            <div class="flex flex-col items-center p-3 bg-white/5 hover:bg-indigo-500/20 rounded-2xl cursor-pointer border border-white/5 transition-all active:scale-95" data-item-idx="${i}">
+                <span class="text-3xl mb-1">${b.id}</span>
+                <span class="text-[10px] text-white/60 text-center leading-tight">${b.name}</span>
+            </div>
+        `).join('');
+    };
+
+    // --- 게임 로직 함수들 ---
+    const initEngine = () => {
+        scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x87ceeb);
+        scene.fog = new THREE.Fog(0x87ceeb, 16, 64);
+
+        camera = new THREE.PerspectiveCamera(75, target.clientWidth / target.clientHeight, 0.1, 1000);
+        camera.position.set(0, 40, 0);
+        camera.rotation.order = 'YXZ';
+
+        renderer = new THREE.WebGLRenderer({ antialias: true });
+        renderer.setSize(target.clientWidth, target.clientHeight);
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+        target.appendChild(renderer.domElement);
+
+        scene.add(new THREE.AmbientLight(0xffffff, 0.8));
+        const sun = new THREE.DirectionalLight(0xffffff, 0.4);
+        sun.position.set(10, 50, 10);
+        scene.add(sun);
+
+        raycaster = new THREE.Raycaster();
+        collisionRaycaster = new THREE.Raycaster();
+        clock = new THREE.Clock();
+    };
+
+    const getHeight = (x, z) => Math.floor(20 + Math.sin(x * 0.1) * 5 + Math.cos(z * 0.1) * 5);
+
+    const createChunk = (cX, cZ) => {
+        const key = `${cX},${cZ}`;
+        const blocks = [];
+        for(let x=0; x<CHUNK_SIZE; x++){
+            for(let z=0; z<CHUNK_SIZE; z++){
+                const wx = cX * CHUNK_SIZE + x, wz = cZ * CHUNK_SIZE + z;
+                const h = getHeight(wx, wz);
+                for(let y=0; y<=h; y++){
+                    let typeIdx = (y === h) ? 0 : (y > h-3 ? 1 : 2);
+                    if (y === 0) typeIdx = blockData.length - 1;
+                    blocks.push({x:wx, y, z:wz, typeIdx});
+                    allBlocks.set(`${wx},${y},${wz}`, typeIdx);
+                }
+            }
+        }
+        const chunk = { cX, cZ, blocks, instancedMeshes: [] };
+        chunks.set(key, chunk);
+        updateChunkMesh(chunk);
+    };
+
+    const updateChunkMesh = (chunk) => {
+        chunk.instancedMeshes.forEach(m => scene.remove(m));
+        chunk.instancedMeshes = [];
+        const groups = blockData.map(() => []);
+        chunk.blocks.forEach(b => {
+            const exposed = !allBlocks.has(`${b.x+1},${b.y},${b.z}`) || !allBlocks.has(`${b.x-1},${b.y},${b.z}`) ||
+                          !allBlocks.has(`${b.x},${b.y+1},${b.z}`) || !allBlocks.has(`${b.x},${b.y-1},${b.z}`) ||
+                          !allBlocks.has(`${b.x},${b.y},${b.z+1}`) || !allBlocks.has(`${b.x},${b.y},${b.z-1}`);
+            if(exposed) groups[b.typeIdx].push(b);
+        });
+        groups.forEach((g, i) => {
+            if(g.length === 0) return;
+            const im = new THREE.InstancedMesh(boxGeo, blockMaterials[i], g.length);
+            const dummy = new THREE.Object3D();
+            g.forEach((b, idx) => { dummy.position.set(b.x, b.y, b.z); dummy.updateMatrix(); im.setMatrixAt(idx, dummy.matrix); });
+            im.userData = { chunkKey: `${chunk.cX},${chunk.cZ}`, typeIdx: i };
+            scene.add(im);
+            chunk.instancedMeshes.push(im);
+        });
+    };
+
+    const animate = () => {
+        requestAnimationFrame(animate);
+        const delta = Math.min(clock.getDelta(), 0.1);
+        
+        if (state.controlsEnabled && !state.inventoryOpen) {
+            // 물리 엔진 간소화
+            velocity.x -= velocity.x * 10 * delta;
+            velocity.z -= velocity.z * 10 * delta;
+            velocity.y -= 25 * delta;
+
+            const dir = new THREE.Vector3(Number(moveState.r)-Number(moveState.l), 0, Number(moveState.f)-Number(moveState.b)).normalize();
+            const camDir = new THREE.Vector3(); camera.getWorldDirection(camDir); camDir.y = 0; camDir.normalize();
+            const camRight = new THREE.Vector3().crossVectors(camera.up, camDir).normalize();
+            
+            if (moveState.f || moveState.b) velocity.add(camDir.multiplyScalar(dir.z * 50 * delta));
+            if (moveState.l || moveState.r) velocity.add(camRight.multiplyScalar(-dir.x * 50 * delta));
+
+            camera.position.add(velocity.clone().multiplyScalar(delta));
+
+            // 지면 충돌
+            collisionRaycaster.set(camera.position, new THREE.Vector3(0, -1, 0));
+            const allIM = []; chunks.forEach(c => allIM.push(...c.instancedMeshes));
+            const intersect = collisionRaycaster.intersectObjects(allIM);
+            const floorY = intersect.length > 0 ? intersect[0].point.y + PLAYER_HEIGHT : 1;
+            if (camera.position.y <= floorY) {
+                camera.position.y = floorY; velocity.y = 0; moveState.canJump = true;
+            }
+
+            // 디버그 업데이트
+            debugEl.textContent = `XYZ: ${camera.position.x.toFixed(1)}, ${camera.position.y.toFixed(1)}, ${camera.position.z.toFixed(1)}`;
+        }
+        renderer.render(scene, camera);
+    };
+
+    // --- 이벤트 바인딩 ---
+    const bindEvents = () => {
+        container.querySelector('#btn-start').onclick = () => container.requestPointerLock();
+        container.querySelector('#close-inv').onclick = () => toggleInventory(false);
+
+        document.addEventListener('pointerlockchange', () => {
+            const locked = document.pointerLockElement === container;
+            state.controlsEnabled = locked;
+            startOverlay.style.display = (locked || state.inventoryOpen) ? 'none' : 'flex';
+            container.querySelector('#crosshair').style.display = locked ? 'block' : 'none';
+        });
+
+        container.addEventListener('mousemove', (e) => {
+            if (!state.controlsEnabled) return;
+            camera.rotation.y -= e.movementX * 0.002;
+            camera.rotation.x = Math.max(-1.5, Math.min(1.5, camera.rotation.x - e.movementY * 0.002));
+        });
+
+        const toggleInventory = (open) => {
+            state.inventoryOpen = open;
+            invOverlay.style.display = open ? 'flex' : 'none';
+            if (open) document.exitPointerLock();
+            else container.requestPointerLock();
+        };
+
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyE') toggleInventory(!state.inventoryOpen);
+            if (state.inventoryOpen) return;
+            if (e.code === 'KeyW') moveState.f = true;
+            if (e.code === 'KeyS') moveState.b = true;
+            if (e.code === 'KeyA') moveState.l = true;
+            if (e.code === 'KeyD') moveState.r = true;
+            if (e.code === 'Space' && moveState.canJump) { velocity.y = 10; moveState.canJump = false; }
+            if (e.key >= '1' && e.key <= '9') { state.selectedIdx = parseInt(e.key)-1; renderHotbar(); }
+        });
+
+        window.addEventListener('keyup', (e) => {
+            if (e.code === 'KeyW') moveState.f = false;
+            if (e.code === 'KeyS') moveState.b = false;
+            if (e.code === 'KeyA') moveState.l = false;
+            if (e.code === 'KeyD') moveState.r = false;
+        });
+
+        invGridEl.addEventListener('click', (e) => {
+            const item = e.target.closest('[data-item-idx]');
+            if (item) {
+                state.hotbar[state.selectedIdx] = parseInt(item.dataset.itemIdx);
+                renderHotbar();
+            }
+        });
+
+        container.addEventListener('mousedown', (e) => {
+            if (!state.controlsEnabled) return;
+            raycaster.setFromCamera(new THREE.Vector2(0, 0), camera);
+            const allIM = []; chunks.forEach(c => allIM.push(...c.instancedMeshes));
+            const hits = raycaster.intersectObjects(allIM);
+            if (hits.length > 0 && hits[0].distance < 6) {
+                const hit = hits[0];
+                const matrix = new THREE.Matrix4(); hit.object.getMatrixAt(hit.instanceId, matrix);
+                const pos = new THREE.Vector3().setFromMatrixPosition(matrix);
+                const px = Math.round(pos.x), py = Math.round(pos.y), pz = Math.round(pos.z);
+
+                if (e.button === 0) { // 삭제
+                    if (blockData[hit.object.userData.typeIdx].isBedrock) return;
+                    const chunk = chunks.get(hit.object.userData.chunkKey);
+                    chunk.blocks = chunk.blocks.filter(b => !(b.x === px && b.y === py && b.z === pz));
+                    allBlocks.delete(`${px},${py},${pz}`);
+                    updateChunkMesh(chunk);
+                } else if (e.button === 2) { // 설치
+                    const n = hit.face.normal;
+                    const nx = px + n.x, ny = py + n.y, nz = pz + n.z;
+                    const cX = Math.floor(nx/CHUNK_SIZE), cZ = Math.floor(nz/CHUNK_SIZE);
+                    const chunk = chunks.get(`${cX},${cZ}`);
+                    if (chunk && !allBlocks.has(`${nx},${ny},${nz}`)) {
+                        const typeIdx = state.hotbar[state.selectedIdx];
+                        chunk.blocks.push({x:nx, y:ny, z:nz, typeIdx});
+                        allBlocks.set(`${nx},${ny},${nz}`, typeIdx);
+                        updateChunkMesh(chunk);
+                    }
+                }
+            }
+        });
+    };
+
+    // --- 실행 ---
+    renderHotbar();
+    renderInventory();
+    initEngine();
+    bindEvents();
+    
+    // 초기 지형 생성
+    for(let x=-RENDER_DISTANCE; x<=RENDER_DISTANCE; x++) {
+        for(let z=-RENDER_DISTANCE; z<=RENDER_DISTANCE; z++) createChunk(x, z);
+    }
+    
+    animate();
+
+    // 정리(Cleanup) 함수 반환
+    return () => {
+        renderer.dispose();
+        target.innerHTML = '';
+    };
+};
+
+// 페이지 로드 시 마운트 실행
+window.onload = () => {
+    const root = document.body; // 실제 환경에 따라 컨테이너 지정
+    mountHasiCraft(root);
+};
+
         const mountSubwayRun = (container) => {
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full h-full pb-4">
@@ -3006,9 +3345,9 @@ const mountDeadshot = (container) => {
   { id: 'bomb',       title: '폭탄 피하기',         icon: 'bomb',                 color: 'bg-slate-200 text-slate-700',   mount: mountBomb },
   { id: 'fixie',      title: '픽시 자전거(PC)',     icon: 'bike',                 color: 'bg-sky-100 text-sky-600',       mount: mountBikeJump },
 
-  // 2. 영어 (알파벳순)
-            
+  // 2. 영어 (알파벳순)      
   { id: 'container',     title: 'BACKROOM',           icon: 'person-standing',      color: 'bg-teal-100 text-teal-600',      mount: mountDeadshot },
+  { id: 'container',     title: 'HasiCraft',           icon: 'block',      color: 'bg-teal-100 text-teal-600',      mount: mountHasiCraft },
   // 3. 숫자 (오름차순)
   { id: 'clicker',    title: '10초 광클',           icon: 'mouse-pointer-click', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountClicker },
   { id: '2048',       title: '2048',               icon: 'layout-grid',          color: 'bg-amber-100 text-amber-800',    mount: mount2048 },
