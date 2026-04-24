@@ -1442,33 +1442,10 @@
  * @param {HTMLElement} container - 게임이 들어갈 부모 요소
  */
 const mountDeadshot = (container) => {
-    // 1. 전역 변수 window.isAdmin 상태 확인
-    const isAdmin = typeof window.isAdmin !== 'undefined' && window.isAdmin === true;
-
-    if (!isAdmin) {
-        container.innerHTML = `
-            <div class="flex flex-col items-center justify-center w-full h-full bg-slate-900 text-white p-6 rounded-2xl border-4 border-red-500 min-h-[400px]">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-16 w-16 text-red-500 mb-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m0 0v2m0-2h2m-2 0H10m11 3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <h2 class="text-2xl font-bold mb-2">접근 권한 없음</h2>
-                <p class="text-slate-400 text-center mb-4">관리자 권한이 필요합니다.</p>
-            </div>
-        `;
-        return () => {};
-    }
-
-    // 2. 관리자일 경우 데드샷 IO 게임 화면 렌더링
     container.innerHTML = `
-        <div class="flex flex-col items-center w-full h-full pb-4">
-            <div class="flex justify-between w-full max-w-5xl px-2 mb-3 font-bold text-xl shrink-0">
-                <a href="https://deadshot.io" target="_blank" class="text-red-600 bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 w-full text-center hover:bg-slate-50 transition-colors">
-                    DEADSHOT.IO 공식 사이트 이동 (관리자 권한)
-                </a>
-            </div>
             <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
                 <iframe 
-                    src="https://ktxsubway-bit.github.io/hasigamefps" 
+                    src="https://ktxsubway-bit.github.io/hasigamebackrom" 
                     class="absolute inset-0 w-full h-full border-0"
                     allowfullscreen="true"
                     scrolling="no"
@@ -3030,8 +3007,8 @@ const mountDeadshot = (container) => {
   { id: 'fixie',      title: '픽시 자전거(PC)',     icon: 'bike',                 color: 'bg-sky-100 text-sky-600',       mount: mountBikeJump },
 
   // 2. 영어 (알파벳순)
-  // 현재 항목 없음
-
+            
+  { id: 'container',     title: 'BACKROOM',           icon: 'person-standing',      color: 'bg-teal-100 text-teal-600',      mount: mountDeadshot },
   // 3. 숫자 (오름차순)
   { id: 'clicker',    title: '10초 광클',           icon: 'mouse-pointer-click', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountClicker },
   { id: '2048',       title: '2048',               icon: 'layout-grid',          color: 'bg-amber-100 text-amber-800',    mount: mount2048 },
