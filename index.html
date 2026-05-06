@@ -2982,121 +2982,24 @@ const mountDeadshot = (container) => {
 /**
  * Gemini 3 Flash Preview 기반 대화 게임
  */
-const mountGemini3Game = (apiKey) => {
-    // 1. 최신 모델 정보 설정 (2026.05 기준)
-    const MODEL_ID = "gemini-3-flash-preview"; 
-    const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${apiKey}`;
-
-    // 2. 전체 화면 UI 구성
-    const container = document.createElement('div');
-    container.style.cssText = `
-        position: fixed; inset: 0; background: #0f172a; color: white;
-        display: flex; flex-direction: column; font-family: sans-serif; z-index: 10000;
-    `;
-
+const mountgemini = (container) => {
     container.innerHTML = `
-        <div style="padding: 15px; background: #1e293b; display: flex; justify-content: space-between; align-items: center;">
-            <h3 style="margin: 0;">⚡ Gemini 3 Flash: Persona Game</h3>
-            <button id="closeGame" style="background: #ef4444; border: none; color: white; padding: 5px 10px; border-radius: 4px; cursor: pointer;">종료</button>
-        </div>
-        
-        <!-- 성격 설정 창 -->
-        <div id="setupView" style="flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 20px;">
-            <h2 style="text-align: center;">AI에게 어떤 성격을 부여할까요?</h2>
-            <input id="personaInput" type="text" placeholder="예: 까칠하지만 속은 따뜻한 츤데레, 긍정적인 초보 마법사" 
-                   style="width: 80%; max-width: 400px; padding: 12px; border-radius: 8px; border: none; outline: none; color: #000;">
-            <button id="startBtn" style="padding: 12px 30px; background: #3b82f6; border: none; color: white; border-radius: 8px; font-weight: bold; cursor: pointer;">게임 시작</button>
-        </div>
-
-        <!-- 채팅창 (초기 숨김) -->
-        <div id="chatView" style="display: none; flex: 1; flex-direction: column; overflow: hidden;">
-            <div id="chatLog" style="flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px;"></div>
-            <div style="padding: 20px; background: #1e293b; display: flex; gap: 10px;">
-                <input id="userInput" type="text" placeholder="메시지를 입력하세요..." style="flex: 1; padding: 12px; border-radius: 6px; border: none;">
-                <button id="sendBtn" style="padding: 12px 20px; background: #10b981; border: none; color: white; border-radius: 6px; cursor: pointer;">전송</button>
+            <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
+                <iframe 
+                    src="https://ktxsubway-bit.github.io/kgamegemini/" 
+                    class="absolute inset-0 w-full h-full border-0"
+                    allowfullscreen="true"
+                    scrolling="no"
+                    allow="autoplay; fullscreen; keyboard"
+                ></iframe>
             </div>
         </div>
     `;
 
-    document.body.appendChild(container);
-
-    // 3. 변수 및 요소 제어
-    let history = [];
-    let persona = "";
-    
-    const setupView = container.querySelector('#setupView');
-    const chatView = container.querySelector('#chatView');
-    const chatLog = container.querySelector('#chatLog');
-    const personaInput = container.querySelector('#personaInput');
-    const userInput = container.querySelector('#userInput');
-
-    // 메시지 출력 함수
-    const addMsg = (role, text) => {
-        const bubble = document.createElement('div');
-        const isAI = role === "AI";
-        bubble.style.cssText = `
-            max-width: 75%; padding: 10px 15px; border-radius: 12px; line-height: 1.5;
-            ${isAI ? 'background: #334155; align-self: flex-start;' : 'background: #2563eb; align-self: flex-end;'}
-        `;
-        bubble.innerHTML = `<strong>${role}:</strong> ${text}`;
-        chatLog.appendChild(bubble);
-        chatLog.scrollTop = chatLog.scrollHeight;
+    return () => {
+        container.innerHTML = '';
     };
-
-    // 4. API 통신 로직
-    async function sendMessage() {
-        const text = userInput.value.trim();
-        if (!text) return;
-
-        addMsg("나", text);
-        userInput.value = "";
-
-        try {
-            const response = await fetch(API_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    // 최신 모델에서 권장하는 시스템 인스트럭션 방식
-                    system_instruction: {
-                        parts: [{ text: `너의 성격과 말투: ${persona}. 이 역할에 완전히 몰입해서 대답해.` }]
-                    },
-                    contents: [
-                        ...history,
-                        { role: "user", parts: [{ text: text }] }
-                    ]
-                })
-            });
-
-            const data = await response.json();
-            const aiText = data.candidates[0].content.parts[0].text;
-
-            addMsg("AI", aiText);
-            
-            // 대화 기록 유지
-            history.push({ role: "user", parts: [{ text: text }] });
-            history.push({ role: "model", parts: [{ text: aiText }] });
-
-        } catch (err) {
-            addMsg("시스템", "에러가 발생했습니다. API 키나 네트워크를 확인하세요.");
-        }
-    }
-
-    // 5. 이벤트 리스너 연결
-    container.querySelector('#startBtn').onclick = () => {
-        if (!personaInput.value.trim()) return alert("성격을 입력해주세요!");
-        persona = personaInput.value;
-        setupView.style.display = "none";
-        chatView.style.display = "flex";
-        addMsg("시스템", `성격 [${persona}] 설정 완료! 대화를 시작합니다.`);
-    };
-
-    container.querySelector('#sendBtn').onclick = sendMessage;
-    userInput.onkeydown = (e) => { if (e.key === "Enter") sendMessage(); };
-    container.querySelector('#closeGame').onclick = () => document.body.removeChild(container);
 };
-
-// 게임 실행 (입력하신 API 키 사용)
-mountGemini3Game("AIzaSyBph3eVitxFUIkBB1QRNYDS8lyTUgg7yrg");
 
 
         // ==========================================
@@ -3131,7 +3034,7 @@ mountGemini3Game("AIzaSyBph3eVitxFUIkBB1QRNYDS8lyTUgg7yrg");
 
   // 2. 영어 (알파벳순)      
  // { id: 'container',     title: 'BACKROOM(PC)',           icon: 'door-open',      color: 'bg-teal-100 text-teal-600',      mount: mountDeadshot },
-  { id: 'apiKey',     title: 'Gemini 페르소나 대화',          icon: 'robot',   color: 'bg-teal-100 text-teal-600',      mount: mountGemini3Game },
+  { id: 'container',     title: 'Gemini 페르소나 대화',          icon: 'robot',   color: 'bg-teal-100 text-teal-600',      mount: mountgemini },
   // 3. 숫자 (오름차순)
   { id: 'clicker',    title: '10초 광클',           icon: 'mouse-pointer-click', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountClicker },
   { id: '2048',       title: '2048',               icon: 'layout-grid',          color: 'bg-amber-100 text-amber-800',    mount: mount2048 },
