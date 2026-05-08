@@ -1460,7 +1460,7 @@ const mountDeadshot = (container) => {
     };
 };
   
-        const mountSnake = (container) => {
+        const mountSnake = (snake) => {
             const SIZE = 20;
             let play=false, score=0, tId=null;
             let player = [], pDir = {x:0,y:-1}, nextDir = {x:0,y:-1};
@@ -3020,7 +3020,7 @@ const mountgemini = (container) => {
   { id: 'color',      title: '색깔 찾기',           icon: 'palette',              color: 'bg-pink-100 text-pink-600',     mount: mountColor },
   { id: 'subway',     title: '서브웨이 런',         icon: 'train',                color: 'bg-cyan-100 text-cyan-600',     mount: mountSubwayRun },
   { id: 'baseball',   title: '숫자 야구',           icon: 'trophy',              color: 'bg-orange-100 text-orange-600', mount: mountBaseball },
-  { id: 'container',      title: '스네이크(NPC)',       icon: 'bug',                  color: 'bg-lime-100 text-lime-700',     mount: mountSnake },
+  { id: 'snake',      title: '스네이크(NPC)',       icon: 'bug',                  color: 'bg-lime-100 text-lime-700',     mount: mountSnake },
   { id: 'penalty',    title: '승부차기',             icon: 'flag',                 color: 'bg-green-100 text-green-700',   mount: mountPenaltyKick },
   { id: 'motorcycle', title: '오토바이 3D',         icon: 'gauge',                color: 'bg-orange-100 text-orange-700', mount: mountMotorcycle },
   { id: 'fps',        title: '지하철 시뮬레이터(PC)',     icon: 'train',                color: 'bg-red-100 text-red-600',       mount: mountFps },
