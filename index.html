@@ -3000,6 +3000,42 @@ const mountgemini = (container) => {
 };
         
 
+const mountGun = (container) => {
+    // 1. HTML 및 5초 알림창 렌더링 (16:9 화면 비율 유지)
+    container.innerHTML = `
+        <div class="relative w-full max-w-5xl aspect-video rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
+            <iframe 
+                src="https://deadshot.io/" 
+                class="absolute inset-0 w-full h-full border-0"
+                allowfullscreen="true"
+                scrolling="no"
+                allow="autoplay; fullscreen; keyboard"
+            ></iframe>
+
+            <div id="credit-badge" class="absolute bottom-4 right-4 z-10 bg-slate-900/90 text-white text-xs md:text-sm px-4 py-2 rounded-lg border border-slate-700 shadow-lg backdrop-blur-sm transition-opacity duration-500 ease-in-out pointer-events-none">
+                <span class="font-semibold text-amber-400">DEADSHOT.io</span> 공식 원작자 페이지
+            </div>
+        </div>
+    `;
+
+    // 2. 5초 뒤에 알림창을 사라지게 하는 타이머 설정
+    const fadeTimeout = setTimeout(() => {
+        const badge = document.getElementById('credit-badge');
+        if (badge) {
+            badge.classList.add('opacity-0'); // 부드러운 페이드 아웃 효과
+            
+            // 애니메이션이 끝난 후 DOM에서 완전히 제거
+            setTimeout(() => badge.remove(), 500);
+        }
+    }, 5000);
+
+    // 3. 페이지 전환 시 안전하게 요소를 지우는 클린업 함수 반환
+    return () => {
+        clearTimeout(fadeTimeout); // 메모리 누수 방지를 위한 타이머 초기화
+        container.innerHTML = '';
+    };
+};
+
 
         // ==========================================
         // 메인 데이터 & 라우팅 (전체 28개 게임 - 한글/영어/숫자순 정렬)
@@ -3034,7 +3070,7 @@ const mountgemini = (container) => {
 
   // 2. 영어 (알파벳순)      
   { id: 'container',     title: 'BELLRUN!',          icon: 'bell',   color: 'bg-teal-100 text-teal-600',      mount: mountgemini },
-  // { id: 'container',     title: 'BUS(PC)',           icon: 'bus',      color: 'bg-teal-100 text-teal-600',      mount: mountBus },
+  { id: 'container',     title: 'DEADSHOT',           icon: 'gun',      color: 'bg-teal-100 text-teal-600',      mount: mountBus },
   // 3. 숫자 (오름차순)
   { id: 'clicker',    title: '10초 광클',           icon: 'mouse-pointer-click', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountClicker },
   { id: '2048',       title: '2048',               icon: 'layout-grid',          color: 'bg-amber-100 text-amber-800',    mount: mount2048 },
