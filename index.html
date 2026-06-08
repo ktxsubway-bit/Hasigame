@@ -3001,12 +3001,15 @@ const mountgemini = (container) => {
         
 
 const mountGun = (container) => {
-    // 1. HTML 및 5초 알림창 렌더링 (진짜 데드샷IO 주소 적용)
+    // 주소 뒤에 매번 바뀌는 숫자를 붙여 브라우저 캐시(벨튀 기억)를 완전히 날려버립니다.
+    const cacheBuster = new Date().getTime();
+
+    // 1. HTML 및 5초 알림창 렌더링
     container.innerHTML = `
         <div class="relative w-full max-w-5xl aspect-video rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
             
             <iframe 
-                src="https://deadshot.io/?v=1" 
+                src="https://deadshot.io/?v=1&t=${cacheBuster}" 
                 class="absolute inset-0 w-full h-full border-0"
                 allowfullscreen="true"
                 scrolling="no"
