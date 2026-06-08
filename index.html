@@ -3091,33 +3091,42 @@ const mountGun = (gun) => {
             lucide.createIcons();
         }
 
-        window.openGame = (id) => {
-            const game = GAMES.find(g => g.id === id);
-            if(!game) return;
-            
-            document.getElementById('menu-screen').classList.add('hidden');
-            document.getElementById('game-screen').classList.remove('hidden');
-            
-            document.getElementById('game-header-title').innerHTML = `
-                <span class="p-2 rounded-lg mr-3 ${game.color}"><i data-lucide="${game.icon}" class="w-6 h-6"></i></span>
-                ${game.title}
-            `;
-            lucide.createIcons();
+        window.openGame = function(id) {
+    const game = GAMES.find(g => g.id === id);
+    if (!game) return;
 
-            const container = document.getElementById('game-container');
-            container.innerHTML = '';
-            
-            // 전체 꽉 찬 화면이 필요한 게임 처리 (패딩 제거)
-            if(id === 'jump3d' || id === 'fps' || id === 'gun') {
-                container.classList.remove('p-4');
-                container.classList.add('p-0');
-            } else {
-                container.classList.remove('p-0');
-                container.classList.add('p-4');
-            }
+    // 1. 메인 컨테이너 영역 가져오기 (변수 이름을 gameContainer로 통일)
+    const gameContainer = document.getElementById('game-container');
+    
+    // 2. 전체화면(패딩 제거) 조건문 처리
+    if (id === 'jump3d' || id === 'fps' || id === 'gun') {
+        gameContainer.classList.remove('p-4');
+        gameContainer.classList.add('p-0');
+    } else {
+        gameContainer.classList.remove('p-0');
+        gameContainer.classList.add('p-4');
+    }
 
-            window.currentCleanup = game.mount(container);
-        };
+    // 3. 상단 헤더 타이틀 및 아이콘 변경
+    document.getElementById('game-header-title').innerHTML = `
+        <span class="p-2 rounded-lg mr-3 ${game.color}"><i data-lucide="${game.icon}" class="w-6 h-6"></i></span>
+        ${game.title}
+    `;
+    
+    // 4. 화면 전환 (메뉴 숨기고 게임 창 열기)
+    document.getElementById('menu-view').classList.add('hidden');
+    document.getElementById('game-view').classList.remove('hidden');
+
+    // 5. 🚨 핵심 수정: gameContainer를 mount 함수에 안전하게 배달합니다!
+    if (game.mount) {
+        game.mount(gameContainer);
+    }
+
+    // 아이콘 렌더링 리프레시
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+};
 
         window.closeGame = () => {
             if(window.currentCleanup) { 
