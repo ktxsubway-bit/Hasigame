@@ -1441,25 +1441,23 @@
  * 데드샷 IO 게임 마운트 함수 (상단 탭 레이아웃 버전)
  * @param {HTMLElement} container - 게임이 들어갈 부모 요소
  */
-const mountBus = (bus) => {
+const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했습니다.
     container.innerHTML = `
-            <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
-                <iframe 
-                    src="https://ktxsubway-bit.github.io/hasigamebackrom" 
-                    class="absolute inset-0 w-full h-full border-0"
-                    allowfullscreen="true"
-                    scrolling="no"
-                    allow="autoplay; fullscreen; keyboard"
-                ></iframe>
-            </div>
+        <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
+            <iframe 
+                src="https://ktxsubway-bit.github.io/hasigamebackrom" 
+                class="absolute inset-0 w-full h-full border-0"
+                allowfullscreen="true"
+                scrolling="no"
+                allow="autoplay; fullscreen; keyboard"
+            ></iframe>
         </div>
-    `;
+    `; // ◀ 불필요하게 닫혀있던 </div> 한 개를 제거했습니다.
 
     return () => {
         container.innerHTML = '';
     };
 };
-  
         const mountSnake = (snake) => {
             const SIZE = 20;
             let play=false, score=0, tId=null;
@@ -3036,7 +3034,7 @@ const mountgemini = (container) => {
 
   // 2. 영어 (알파벳순)      
   { id: 'container',     title: 'BELLRUN!',          icon: 'bell',   color: 'bg-teal-100 text-teal-600',      mount: mountgemini },
-  { id: 'bus',     title: 'BUS(PC)',           icon: 'bus',      color: 'bg-teal-100 text-teal-600',      mount: mountBus },
+  { id: 'container',     title: 'BUS(PC)',           icon: 'bus',      color: 'bg-teal-100 text-teal-600',      mount: mountBus },
   // 3. 숫자 (오름차순)
   { id: 'clicker',    title: '10초 광클',           icon: 'mouse-pointer-click', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountClicker },
   { id: '2048',       title: '2048',               icon: 'layout-grid',          color: 'bg-amber-100 text-amber-800',    mount: mount2048 },
