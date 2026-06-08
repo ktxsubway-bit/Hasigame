@@ -1441,7 +1441,7 @@
  * 데드샷 IO 게임 마운트 함수 (상단 탭 레이아웃 버전)
  * @param {HTMLElement} container - 게임이 들어갈 부모 요소
  */
-const mountBus = (container) => {
+const mountBus = (bus) => {
     container.innerHTML = `
             <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
                 <iframe 
@@ -3036,7 +3036,7 @@ const mountgemini = (container) => {
 
   // 2. 영어 (알파벳순)      
   { id: 'container',     title: 'BELLRUN!',          icon: 'bell',   color: 'bg-teal-100 text-teal-600',      mount: mountgemini },
-  { id: 'container',     title: 'BUS(PC)',           icon: 'bus',      color: 'bg-teal-100 text-teal-600',      mount: mountBus },
+  { id: 'bus',     title: 'BUS(PC)',           icon: 'bus',      color: 'bg-teal-100 text-teal-600',      mount: mountBus },
   // 3. 숫자 (오름차순)
   { id: 'clicker',    title: '10초 광클',           icon: 'mouse-pointer-click', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountClicker },
   { id: '2048',       title: '2048',               icon: 'layout-grid',          color: 'bg-amber-100 text-amber-800',    mount: mount2048 },
