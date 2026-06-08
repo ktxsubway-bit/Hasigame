@@ -3095,16 +3095,20 @@ const mountGun = (gun) => {
     const game = GAMES.find(g => g.id === id);
     if (!game) return;
 
-    // 1. 메인 컨테이너 영역 가져오기 (변수 이름을 gameContainer로 통일)
-    const gameContainer = document.getElementById('game-container');
+    // 1. 하준 님 HTML에 맞는 진짜 ID인 'container'를 가져옵니다.
+    const containerBox = document.getElementById('container');
     
     // 2. 전체화면(패딩 제거) 조건문 처리
     if (id === 'jump3d' || id === 'fps' || id === 'gun') {
-        gameContainer.classList.remove('p-4');
-        gameContainer.classList.add('p-0');
+        if (containerBox) {
+            containerBox.classList.remove('p-4');
+            containerBox.classList.add('p-0');
+        }
     } else {
-        gameContainer.classList.remove('p-0');
-        gameContainer.classList.add('p-4');
+        if (containerBox) {
+            containerBox.classList.remove('p-0');
+            containerBox.classList.add('p-4');
+        }
     }
 
     // 3. 상단 헤더 타이틀 및 아이콘 변경
@@ -3117,9 +3121,9 @@ const mountGun = (gun) => {
     document.getElementById('menu-view').classList.add('hidden');
     document.getElementById('game-view').classList.remove('hidden');
 
-    // 5. 🚨 핵심 수정: gameContainer를 mount 함수에 안전하게 배달합니다!
-    if (game.mount) {
-        game.mount(gameContainer);
+    // 5. 데드샷 등의 게임 화면 마운트 실행
+    if (game.mount && containerBox) {
+        game.mount(containerBox);
     }
 
     // 아이콘 렌더링 리프레시
@@ -3127,7 +3131,6 @@ const mountGun = (gun) => {
         lucide.createIcons();
     }
 };
-
         window.closeGame = () => {
             if(window.currentCleanup) { 
                 window.currentCleanup(); 
