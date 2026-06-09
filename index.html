@@ -3000,7 +3000,7 @@ const mountgemini = (container) => {
 };
         
 
-const mountGun = (gun) => {
+const mountGun = (container) => {
     container.innerHTML = `
         <div class="relative w-full h-[calc(100vh-100px)] rounded-2xl overflow-hidden border-4 border-slate-700 bg-black shadow-2xl">
             <iframe src="https://deadshot.io/" class="absolute inset-0 w-full h-full border-0" allow="autoplay; gamepad; fullscreen"></iframe>
@@ -3017,8 +3017,8 @@ const mountGun = (gun) => {
         </div>
     `;
 
-    // 🕒 5초(5000밀리초) 뒤에 안내문 박스를 화면에서 숨기는 기능
-    setTimeout(() => {
+    // 🕒 5초 뒤에 안내문 박스를 화면에서 숨기는 기능
+    const timerId = setTimeout(() => {
         const notice = document.getElementById('deadshot-notice');
         if (notice) {
             // 서서히 투명해지면서 사라지도록 스타일 처리
@@ -3028,6 +3028,11 @@ const mountGun = (gun) => {
             setTimeout(() => notice.classList.add('hidden'), 500);
         }
     }, 5000);
+
+    // 다른 게임으로 나갈 때 타이머 잔재를 깨끗이 청소(클린업)해 줍니다.
+    return () => {
+        clearTimeout(timerId);
+    };
 };
 
 
@@ -3065,7 +3070,7 @@ const mountGun = (gun) => {
 
   // 2. 영어 (알파벳순)      
   { id: 'container',     title: 'BELLRUN!',          icon: 'bell',   color: 'bg-teal-100 text-teal-600',      mount: mountgemini },
-  { id: 'gun',     title: 'DEADSHOT',           icon: 'crosshair',      color: 'bg-teal-100 text-teal-600',      mount: mountGun },
+  { id: 'container',     title: 'DEADSHOT',           icon: 'crosshair',      color: 'bg-teal-100 text-teal-600',      mount: mountGun },
   // 3. 숫자 (오름차순)
   { id: 'clicker',    title: '10초 광클',           icon: 'mouse-pointer-click', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountClicker },
   { id: '2048',       title: '2048',               icon: 'layout-grid',          color: 'bg-amber-100 text-amber-800',    mount: mount2048 },
