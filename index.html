@@ -3091,46 +3091,34 @@ const mountGun = (gun) => {
             lucide.createIcons();
         }
 
-        window.openGame = function(id) {
-    const game = GAMES.find(g => g.id === id);
-    if (!game) return;
+        window.openGame = (id) => {
+            const game = GAMES.find(g => g.id === id);
+            if(!game) return;
+            
+            document.getElementById('menu-screen').classList.add('hidden');
+            document.getElementById('game-screen').classList.remove('hidden');
+            
+            document.getElementById('game-header-title').innerHTML = `
+                <span class="p-2 rounded-lg mr-3 ${game.color}"><i data-lucide="${game.icon}" class="w-6 h-6"></i></span>
+                ${game.title}
+            `;
+            lucide.createIcons();
 
-    // 1. 하준 님 HTML에 맞는 진짜 ID인 'container'를 가져옵니다.
-    const containerBox = document.getElementById('container');
-    
-    // 2. 전체화면(패딩 제거) 조건문 처리
-    if (id === 'jump3d' || id === 'fps' || id === 'gun') {
-        if (containerBox) {
-            containerBox.classList.remove('p-4');
-            containerBox.classList.add('p-0');
-        }
-    } else {
-        if (containerBox) {
-            containerBox.classList.remove('p-0');
-            containerBox.classList.add('p-4');
-        }
-    }
+            const container = document.getElementById('game-container');
+            container.innerHTML = '';
+            
+            // 전체 꽉 찬 화면이 필요한 게임 처리 (패딩 제거)
+            if(id === 'jump3d' || id === 'fps' || id === 'gun') {
+                container.classList.remove('p-4');
+                container.classList.add('p-0');
+            } else {
+                container.classList.remove('p-0');
+                container.classList.add('p-4');
+            }
 
-    // 3. 상단 헤더 타이틀 및 아이콘 변경
-    document.getElementById('game-header-title').innerHTML = `
-        <span class="p-2 rounded-lg mr-3 ${game.color}"><i data-lucide="${game.icon}" class="w-6 h-6"></i></span>
-        ${game.title}
-    `;
-    
-    // 4. 화면 전환 (메뉴 숨기고 게임 창 열기)
-    document.getElementById('menu-view').classList.add('hidden');
-    document.getElementById('game-view').classList.remove('hidden');
+            window.currentCleanup = game.mount(container);
+        };
 
-    // 5. 데드샷 등의 게임 화면 마운트 실행
-    if (game.mount && containerBox) {
-        game.mount(containerBox);
-    }
-
-    // 아이콘 렌더링 리프레시
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
-};
         window.closeGame = () => {
             if(window.currentCleanup) { 
                 window.currentCleanup(); 
