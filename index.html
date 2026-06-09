@@ -3066,10 +3066,10 @@ const mountGun = (container) => {
   { id: 'tictactoe',  title: '틱택토',               icon: 'grid-3x3',            color: 'bg-blue-100 text-blue-600',     mount: mountTicTacToe },
   { id: 'simon',      title: '패턴 기억',           icon: 'list-ordered',        color: 'bg-violet-100 text-violet-600', mount: mountSimon },
   { id: 'bomb',       title: '폭탄 피하기',         icon: 'bomb',                 color: 'bg-slate-200 text-slate-700',   mount: mountBomb },
-//  { id: 'fixie',      title: '픽시 자전거',     icon: 'bike',                 color: 'bg-sky-100 text-sky-600',       mount: mountBikeJump },
+  { id: 'fixie',      title: '픽시 자전거',     icon: 'bike',                 color: 'bg-sky-100 text-sky-600',       mount: mountBikeJump },
 
   // 2. 영어 (알파벳순)      
-  { id: 'bell',     title: 'BELLRUN!',          icon: 'bell',   color: 'bg-teal-100 text-teal-600',      mount: mountgemini },
+  // { id: 'bell',     title: 'BELLRUN!',          icon: 'bell',   color: 'bg-teal-100 text-teal-600',      mount: mountgemini },
   { id: 'container',     title: 'DEADSHOT',           icon: 'crosshair',      color: 'bg-teal-100 text-teal-600',      mount: mountGun },
   // 3. 숫자 (오름차순)
   { id: 'clicker',    title: '10초 광클',           icon: 'mouse-pointer-click', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountClicker },
@@ -3113,7 +3113,7 @@ const mountGun = (container) => {
             container.innerHTML = '';
             
             // 전체 꽉 찬 화면이 필요한 게임 처리 (패딩 제거)
-            if(id === 'jump3d' || id === 'fps' || id === 'gun') {
+            if(id === 'jump3d' || id === 'fps' || id === 'container') {
                 container.classList.remove('p-4');
                 container.classList.add('p-0');
             } else {
