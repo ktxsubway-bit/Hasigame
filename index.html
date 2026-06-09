@@ -17,13 +17,13 @@
         .preserve-3d { transform-style: preserve-3d; }
         .rotate-y-180 { transform: rotateY(180deg); }
         .backface-hidden { backface-visibility: hidden; }
-        
+       
         /* 12. 컬러 게임 그리드 */
         .color-grid { display: grid; gap: 4px; width: 100%; height: 100%; }
-        
+       
         /* 숨김 처리 유틸 */
         .hidden { display: none !important; }
-        
+       
         /* 공지사항 스크롤 애니메이션 */
         @keyframes scrollText {
             0% { transform: translateX(0); }
@@ -79,7 +79,7 @@
         <div id="games-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             <!-- 게임 카드들이 여기에 동적으로 생성됩니다 -->
         </div>
-        
+       
         <footer class="mt-12 text-center text-slate-400 text-sm pb-8">
             <p id="user-info">연결 중...</p>
         </footer>
@@ -95,7 +95,7 @@
             <h2 id="game-header-title" class="text-xl font-black flex items-center text-slate-800"></h2>
             <div class="w-20"></div> <!-- 밸런스용 빈 공간 -->
         </header>
-        
+       
         <main id="game-container" class="w-full bg-slate-50 relative flex flex-col items-center justify-center p-4 overflow-hidden">
             <!-- 게임 내용이 여기에 마운트됩니다 -->
         </main>
@@ -164,11 +164,11 @@
             const container = document.getElementById('notice-container');
             const textEl = document.getElementById('notice-text');
             if(!container || !textEl) return;
-            
+           
             textEl.textContent = text;
             textEl.classList.remove('scrolling-text');
             textEl.style.paddingLeft = '0';
-            
+           
             requestAnimationFrame(() => {
                 if (textEl.scrollWidth > container.clientWidth) {
                     textEl.classList.add('scrolling-text');
@@ -213,16 +213,16 @@
                     await signInAnonymously(auth);
                 } catch(e) {
                     console.warn("Firebase 익명 로그인 에러 (로컬 모드로 진행합니다):", e.message);
-                    showMenu(); 
+                    showMenu();
                 }
             };
-            
+           
             // 인증 상태 감시 및 데이터 동기화
             onAuthStateChanged(auth, (user) => {
                 if (user) {
                     currentUser = user;
                     document.getElementById('user-info').innerText = `접속 ID: ${user.uid.substring(0, 8)}... (클라우드 연결됨)`;
-                    
+                   
                     onSnapshot(noticeRef, (docSnap) => {
                         if (docSnap.exists()) {
                             window.currentNotice = docSnap.data().text;
@@ -231,7 +231,7 @@
                     }, (error) => {
                         console.warn("Firestore 규칙을 'allow read, write: if true;'로 설정하면 정상 동기화됩니다.");
                     });
-                    
+                   
                     showMenu();
                 }
             });
@@ -241,7 +241,7 @@
 
         } catch(e) {
             console.error("Firebase 초기화 에러:", e);
-            showMenu(); 
+            showMenu();
         }
 
         // ==========================================
@@ -316,7 +316,7 @@
             if(inputVal.trim() !== '') {
                 window.currentNotice = inputVal;
                 window.updateNoticeDisplay(window.currentNotice);
-                
+               
                 if (db && currentUser) {
                     try {
                         await setDoc(noticeRef, { text: inputVal }, { merge: true });
@@ -369,11 +369,11 @@
                 document.getElementById('rps-computer').textContent = emojis[compChoice];
 
                 let resText = '';
-                if (choice === compChoice) { resText = '비겼다!'; score.draw++; } 
+                if (choice === compChoice) { resText = '비겼다!'; score.draw++; }
                 else if ((choice === '가위' && compChoice === '보') || (choice === '바위' && compChoice === '가위') || (choice === '보' && compChoice === '바위')) {
                     resText = '이겼다!! 🎉'; score.win++;
                 } else { resText = '졌다... 😢'; score.lose++; }
-                
+               
                 document.getElementById('rps-result').textContent = resText;
                 document.getElementById('rps-win').textContent = score.win;
                 document.getElementById('rps-draw').textContent = score.draw;
@@ -500,11 +500,11 @@
                 const grid = document.getElementById('gf-grid');
                 if(!grid) return;
                 grid.innerHTML = '';
-                
+               
                 const pDiv = document.createElement('div');
                 pDiv.className = 'w-5 h-5 bg-indigo-600 rounded-lg absolute transition-all duration-100 shadow-md border-2 border-white z-10';
                 pDiv.style.left = `${px * 26.4 + 3.2}px`; pDiv.style.top = `${py * 26.4 + 3.2}px`;
-                
+               
                 const fDiv = document.createElement('div');
                 fDiv.className = 'text-2xl absolute leading-none drop-shadow-sm'; fDiv.textContent = '🍎';
                 fDiv.style.left = `${fx * 26.4 + 1}px`; fDiv.style.top = `${fy * 26.4 + 1}px`;
@@ -532,7 +532,7 @@
                 document.getElementById('gf-overlay').classList.add('hidden');
                 document.getElementById('gf-overtext').classList.add('hidden');
                 draw();
-                
+               
                 clearInterval(timer);
                 timer = setInterval(() => {
                     timeLeft--; draw();
@@ -612,7 +612,7 @@
                     const x = Math.random() * 80 + 10;
                     el.style.left = `${x}%`; el.style.top = `-10%`;
                     board.appendChild(el);
-                    
+                   
                     const fallSpeed = 1.0 + (score * 0.05) + Math.random() * 0.5;
                     fruits.push({ id: Math.random(), x, y: -10, el, speed: fallSpeed });
                     lastTime = time;
@@ -620,15 +620,15 @@
 
                 fruits = fruits.filter(f => {
                     f.y += f.speed; f.el.style.top = `${f.y}%`;
-                    if(f.y >= 82 && f.y <= 95 && Math.abs(f.x - playerX) < 18) { 
-                        score += 10; 
-                        f.el.remove(); 
-                        return false; 
+                    if(f.y >= 82 && f.y <= 95 && Math.abs(f.x - playerX) < 18) {
+                        score += 10;
+                        f.el.remove();
+                        return false;
                     }
-                    if(f.y > 100) { 
-                        missed++; 
-                        f.el.remove(); 
-                        return false; 
+                    if(f.y > 100) {
+                        missed++;
+                        f.el.remove();
+                        return false;
                     }
                     return true;
                 });
@@ -694,7 +694,7 @@
                 grid.innerHTML = board.map((c, i) => `
                     <button data-idx="${i}" class="ttt-cell w-24 h-24 bg-white rounded-2xl text-6xl font-black flex items-center justify-center hover:bg-slate-50 shadow-sm transition-all transform active:scale-95 ${c==='X'?'text-indigo-500':'text-rose-500'}">${c || ''}</button>
                 `).join('');
-                
+               
                 grid.querySelectorAll('.ttt-cell').forEach(btn => {
                     btn.addEventListener('click', (e) => {
                         const i = e.target.dataset.idx;
@@ -755,7 +755,7 @@
                     if(locked) return;
                     const i = parseInt(e.currentTarget.dataset.idx);
                     if(flipped.includes(i) || solved.includes(i)) return;
-                    
+                   
                     flipped.push(i); render();
 
                     if(flipped.length === 2) {
@@ -800,13 +800,13 @@
                         ${m ? '<div class="text-6xl animate-bounce transform origin-bottom pb-1 pointer-events-none drop-shadow-lg">🦫</div>' : ''}
                     </div>
                 `).join('');
-                
+               
                 grid.querySelectorAll('.wa-hole').forEach(el => {
                     const hit = (e) => {
                         e.preventDefault();
                         const i = el.dataset.idx;
-                        if(playing && moles[i]) { 
-                            score += 10; moles[i] = false; 
+                        if(playing && moles[i]) {
+                            score += 10; moles[i] = false;
                             el.innerHTML = '<div class="text-5xl pb-4 pointer-events-none drop-shadow-lg">💥</div>';
                             setTimeout(render, 150);
                         }
@@ -817,7 +817,7 @@
 
             const start = () => {
                 score=0; time=20; playing=true; document.getElementById('wa-start').classList.add('hidden');
-                
+               
                 tMole = setInterval(() => {
                     moles.fill(false);
                     let num = Math.floor(Math.random()*3)+1;
@@ -862,7 +862,7 @@
                 state = 'waiting';
                 box.className = 'w-full aspect-square rounded-[3rem] flex flex-col items-center justify-center cursor-pointer transition-colors shadow-2xl bg-rose-500 border-8 border-rose-600 active:scale-95 duration-75';
                 text.innerText = '대기...'; sub.innerText = '초록색이 되면 누르세요';
-                
+               
                 const delay = 2000 + Math.random() * 3000;
                 tId = setTimeout(() => {
                     state = 'ready';
@@ -980,7 +980,7 @@
             const btn = document.getElementById('sc-btn');
             const scoreDisplay = document.getElementById('tm-score');
             const timerDisplay = document.getElementById('tm-timer');
-            
+           
             const hit = (e) => {
                 e.preventDefault();
                 if(!playing && !fin) {
@@ -990,7 +990,7 @@
                         let elapsed = (Date.now() - startAt) / 1000;
                         let remaining = Math.max(0, 10 - elapsed);
                         timerDisplay.innerText = remaining.toFixed(1) + 's';
-                        
+                       
                         if(remaining <= 0) {
                             playing = false; fin = true; clearInterval(tId);
                             btn.textContent = '끝!'; btn.disabled = true; btn.classList.add('opacity-50', 'grayscale');
@@ -1003,7 +1003,7 @@
             };
 
             btn.addEventListener('mousedown', hit); btn.addEventListener('touchstart', hit, {passive:false});
-            
+           
             document.getElementById('sc-rst').addEventListener('click', () => {
                 clk=0; time=10; playing=false; fin=false;
                 scoreDisplay.textContent=0; timerDisplay.textContent='10.0s';
@@ -1158,22 +1158,22 @@
             `;
 
             const grid = container.querySelector('#co-grid');
-            
+           
             const gen = () => {
                 const size = Math.min(8, Math.floor((level + 1) / 2) + 1);
                 const count = size * size;
-                
+               
                 const h = Math.floor(Math.random() * 360);
-                const s = Math.floor(Math.random() * 40) + 40; 
-                const l = Math.floor(Math.random() * 40) + 30; 
+                const s = Math.floor(Math.random() * 40) + 40;
+                const l = Math.floor(Math.random() * 40) + 30;
                 const diff = Math.max(3, 30 - level * 1.5);
                 const baseColor = `hsl(${h}, ${s}%, ${l}%)`;
                 const diffColor = `hsl(${h}, ${s}%, ${l + diff}%)`;
                 const ansIdx = Math.floor(Math.random() * count);
-                
+               
                 grid.style.gridTemplateColumns = `repeat(${size}, minmax(0, 1fr))`;
                 grid.innerHTML = '';
-                
+               
                 for (let i = 0; i < count; i++) {
                     const cell = document.createElement('div');
                     cell.className = 'rounded-xl cursor-pointer transition-transform active:scale-90 shadow-sm';
@@ -1242,7 +1242,7 @@
             const grid = document.getElementById('sm-grid');
             grid.innerHTML = colors.map((c,i) => `<button data-idx="${i}" class="sm-btn w-[47%] h-[47%] transition-all duration-200 rounded-[2rem] ${c} opacity-40"></button>`).join('');
             const btns = grid.querySelectorAll('.sm-btn');
-            
+           
             const light = (idx, time=400) => new Promise(res => {
                 btns[idx].classList.remove('opacity-40');
                 btns[idx].classList.remove(colors[idx]);
@@ -1255,11 +1255,11 @@
             });
 
             const playSeq = async () => {
-                show = true; 
+                show = true;
                 document.getElementById('sm-center').innerHTML = '<span class="text-indigo-400 animate-pulse">보는중...</span>';
                 await new Promise(r=>setTimeout(r,800));
                 for(let i of seq) { await light(i); await new Promise(r=>setTimeout(r,200)); }
-                show = false; 
+                show = false;
                 document.getElementById('sm-center').innerHTML = '<span class="text-emerald-400">눌러요!</span>';
             };
 
@@ -1418,20 +1418,20 @@
             document.getElementById('tp-st').addEventListener('click', start);
             document.getElementById('tp-in').addEventListener('input', (e) => {
                 if(!play) return;
-                
+               
                 // 양끝 공백을 무시하여 스페이스바를 눌러서 자연스럽게 한글 조합을 끝낼 수 있도록 처리
                 const val = e.target.value.trim();
-                
-                if(val === cw) { 
-                    score += cw.length * 10; 
-                    document.getElementById('tp-score').textContent = score; 
-                    e.target.value = ''; 
-                    
+               
+                if(val === cw) {
+                    score += cw.length * 10;
+                    document.getElementById('tp-score').textContent = score;
+                    e.target.value = '';
+                   
                     // 한글 입력기(IME) 버그 해결: 포커스를 뗐다 다시 줘서 남아있는 글자 조합 버퍼 강제 초기화
                     e.target.blur();
                     e.target.focus();
-                    
-                    next(); 
+                   
+                    next();
                 }
             });
             return () => clearInterval(tId);
@@ -1444,8 +1444,8 @@
 const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했습니다.
     container.innerHTML = `
         <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
-            <iframe 
-                src="https://ktxsubway-bit.github.io/hasigamebackrom" 
+            <iframe
+                src="https://ktxsubway-bit.github.io/hasigamebackrom"
                 class="absolute inset-0 w-full h-full border-0"
                 allowfullscreen="true"
                 scrolling="no"
@@ -1547,7 +1547,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                         npc.dir = dirs[Math.floor(Math.random()*4)];
                     }
                     let nHead = { x: npc.body[0].x + npc.dir.x, y: npc.body[0].y + npc.dir.y };
-                    
+                   
                     if(isCollision(nHead)) {
                         const dirs = [{x:1,y:0},{x:-1,y:0},{x:0,y:1},{x:0,y:-1}];
                         let moved = false;
@@ -1625,7 +1625,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                         const bg = document.createElement('div');
                         bg.className = 'bg-[#cdc1b4] rounded-lg w-full h-full p-tile';
                         grid.appendChild(bg);
-                        
+                       
                         if(board[r][c] !== 0) {
                             const val = board[r][c];
                             const tile = document.createElement('div');
@@ -1648,7 +1648,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                 }
             };
 
-            const move = (dir) => { 
+            const move = (dir) => {
                 if(!play) return;
                 let moved = false;
                 let newBoard = JSON.parse(JSON.stringify(board));
@@ -1785,7 +1785,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
 
                 if(by>=316 && by<=326 && bx>=px-10 && bx<=px+60) {
                     vy = -Math.abs(vy);
-                    vx = (bx - (px+30)) * 0.15; 
+                    vx = (bx - (px+30)) * 0.15;
                 }
 
                 let hitCount = 0;
@@ -1793,7 +1793,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                     if(b.active && bx>=b.x-10 && bx<=b.x+b.w && by>=b.y-10 && by<=b.y+b.h) {
                         b.active=false; b.el.classList.add('hidden');
                         vy = -vy; score+=10; document.getElementById('br-score').textContent=score;
-                        break; 
+                        break;
                     }
                     if(!b.active) hitCount++;
                 }
@@ -1861,9 +1861,9 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
             const board = document.getElementById('tm-board');
 
             const resetLevel = () => {
-                speed = 1.2 + (score * 0.15); 
-                targetW = Math.max(3, 20 - (score * 0.4)); 
-                targetX = Math.random() * (100 - targetW); 
+                speed = 1.2 + (score * 0.15);
+                targetW = Math.max(3, 20 - (score * 0.4));
+                targetX = Math.random() * (100 - targetW);
                 target.style.left = `${targetX}%`;
                 target.style.width = `${targetW}%`;
             };
@@ -1887,7 +1887,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
             const doHit = (e) => {
                 if(e) e.preventDefault();
                 if(!play) return;
-                
+               
                 if(lineX >= targetX && lineX <= targetX + targetW) {
                     score++; document.getElementById('tm-score').textContent = score;
                     board.classList.replace('bg-slate-200', 'bg-emerald-200');
@@ -1895,7 +1895,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                     resetLevel();
                 } else {
                     play = false; ov.classList.remove('hidden');
-                    msg.innerHTML = `<span class="text-sm block text-slate-300 font-medium mb-1">최종 점수</span>${score}점`; 
+                    msg.innerHTML = `<span class="text-sm block text-slate-300 font-medium mb-1">최종 점수</span>${score}점`;
                     msg.classList.remove('hidden');
                     stBtn.textContent = '다시하기';
                 }
@@ -1907,7 +1907,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
 
             const bgClick = (e) => {
                 if(play && e.target.id !== 'tm-st' && e.target.id !== 'tm-action') {
-                    if (e.button === 0) doHit(); 
+                    if (e.button === 0) doHit();
                 }
             };
             container.addEventListener('mousedown', bgClick);
@@ -1964,7 +1964,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
             // 1. Three.js 씬 셋업
             const canvasContainer = document.getElementById('jump3d-canvas');
             const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x87CEEB); 
+            scene.background = new THREE.Color(0x87CEEB);
             scene.fog = new THREE.FogExp2(0x87CEEB, 0.025);
 
             const camera = new THREE.PerspectiveCamera(75, canvasContainer.clientWidth / canvasContainer.clientHeight, 0.1, 1000);
@@ -1985,7 +1985,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
             let canJump = false;
             const pSize = 0.4;   // 플레이어 반경 (AABB)
             const pHeight = 1.6; // 플레이어 키
-            
+           
             let level = 1;
             let platforms = [];
             let goal = null;
@@ -2030,8 +2030,8 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                     // 레벨이 오를수록 발판 크기 감소
                     const w = Math.max(1.5, 4 - lvl * 0.2);
                     const d = Math.max(1.5, 4 - lvl * 0.2);
-                    
-                    addPlatform(curX, curY, curZ, w, 1, d, 0x4ade80); 
+                   
+                    addPlatform(curX, curY, curZ, w, 1, d, 0x4ade80);
                 }
 
                 // 도착 지점 (노란색)
@@ -2129,12 +2129,12 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                 const updateJoystick = (touch) => {
                     let dx = touch.clientX - joyCenterX;
                     let dy = touch.clientY - joyCenterY;
-                    const maxDist = 32; 
+                    const maxDist = 32;
                     const dist = Math.sqrt(dx*dx + dy*dy);
                     if(dist > maxDist) { dx = (dx/dist) * maxDist; dy = (dy/dist) * maxDist; }
                     joyKnob.style.transform = `translate(${dx}px, ${dy}px)`;
-                    joyX = dx / maxDist; 
-                    joyY = dy / maxDist; 
+                    joyX = dx / maxDist;
+                    joyY = dy / maxDist;
                 };
 
                 // 점프 버튼
@@ -2231,7 +2231,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                         // X, Z축 겹침 확인
                         if(px + pSize > plat.minX && px - pSize < plat.maxX &&
                            pz + pSize > plat.minZ && pz - pSize < plat.maxZ) {
-                            
+                           
                             // 위에서 아래로 떨어질 때 (바닥 충돌)
                             if(vy <= 0 && py - pHeight/2 >= plat.maxY + vy - 0.2 && py - pHeight/2 <= plat.maxY + 0.2) {
                                 py = plat.maxY + pHeight/2;
@@ -2311,8 +2311,8 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                         <span class="text-sky-600 bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 w-full text-center">픽시 자전거</span>
                     </div>
                     <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
-                        <iframe 
-                            src="https://ktxsubway-bit.github.io/hasigameb/" 
+                        <iframe
+                            src="https://ktxsubway-bit.github.io/hasigameb/"
                             class="absolute inset-0 w-full h-full border-0"
                             allowfullscreen="true"
                             scrolling="no"
@@ -2354,7 +2354,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
             const height = canvasContainer.clientHeight || 300;
 
             const scene = new THREE.Scene();
-            scene.background = new THREE.Color(0x0f172a); 
+            scene.background = new THREE.Color(0x0f172a);
             scene.fog = new THREE.Fog(0x0f172a, 20, 100);
 
             const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 150);
@@ -2452,7 +2452,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                 lightPoles.forEach(p => { p.position.z += speed; if(p.position.z > 10) p.position.z -= 200; });
 
                 playerMoto.position.x += (targetX - playerMoto.position.x) * 0.2;
-                playerMoto.rotation.z = (targetX - playerMoto.position.x) * -0.15; 
+                playerMoto.rotation.z = (targetX - playerMoto.position.x) * -0.15;
                 playerMoto.rotation.y = (playerMoto.position.x - targetX) * 0.05;
 
                 camera.position.x += (playerMoto.position.x * 0.7 - camera.position.x) * 0.1;
@@ -2469,7 +2469,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                     const lanes = [-5, 0, 5];
                     obsMesh.position.set(lanes[Math.floor(Math.random()*3)], 0, -100);
                     scene.add(obsMesh);
-                    obstacles.push({mesh: obsMesh, speed: speed * 0.4}); 
+                    obstacles.push({mesh: obsMesh, speed: speed * 0.4});
                     lastT = time;
                 }
 
@@ -2479,7 +2479,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
 
                 for(let i=obstacles.length-1; i>=0; i--) {
                     let obs = obstacles[i];
-                    obs.mesh.position.z += (speed - obs.speed); 
+                    obs.mesh.position.z += (speed - obs.speed);
 
                     const oBox = new THREE.Box3().setFromObject(obs.mesh);
                     oBox.expandByScalar(-0.2);
@@ -2505,7 +2505,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
             };
 
             document.getElementById('mt-st').addEventListener('click', (e) => { e.stopPropagation(); start(); });
-            const mv = (d) => { 
+            const mv = (d) => {
                 if(play) {
                     let currentLane = Math.round(targetX / 5);
                     targetX = Math.max(-5, Math.min(5, (currentLane + d) * 5));
@@ -2542,9 +2542,9 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
             resizeObs.observe(canvasContainer);
             renderer.render(scene, camera);
 
-            return () => { 
-                cancelAnimationFrame(reqId); 
-                window.removeEventListener('keydown', keydown); 
+            return () => {
+                cancelAnimationFrame(reqId);
+                window.removeEventListener('keydown', keydown);
                 resizeObs.disconnect();
                 renderer.dispose();
                 scene.traverse(obj => {
@@ -2558,12 +2558,12 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
     // 원작자 표시 레이어를 제거하고 iframe만 남김
     container.innerHTML = `
         <div style="width: 100%; height: 100%; overflow: hidden;" class="absolute inset-0 bg-black">
-            <iframe 
-                src="https://ktxsubway-bit.github.io/hasigamefps" 
-                width="100%" 
-                height="100%" 
-                frameborder="0" 
-                allow="autoplay; fullscreen; keyboard" 
+            <iframe
+                src="https://ktxsubway-bit.github.io/hasigamefps"
+                width="100%"
+                height="100%"
+                frameborder="0"
+                allow="autoplay; fullscreen; keyboard"
                 allowfullscreen="true"
                 class="w-full h-full border-0"
             ></iframe>
@@ -2582,8 +2582,8 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                         <span class="text-purple-600 bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 w-full text-center">탕탕 이모지 특공대</span>
                     </div>
                     <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
-                        <iframe 
-                            src="https://ktxsubway-bit.github.io/hasigameUFO/" 
+                        <iframe
+                            src="https://ktxsubway-bit.github.io/hasigameUFO/"
                             class="absolute inset-0 w-full h-full border-0"
                             allowfullscreen="true"
                             scrolling="no"
@@ -2601,8 +2601,8 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                         <span class="text-zinc-600 bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 w-full text-center">가자! 점자!</span>
                     </div>
                     <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
-                        <iframe 
-                            src="https://ktxsubway-bit.github.io/hasigameAI/" 
+                        <iframe
+                            src="https://ktxsubway-bit.github.io/hasigameAI/"
                             class="absolute inset-0 w-full h-full border-0"
                             allowfullscreen="true"
                             scrolling="no"
@@ -2613,7 +2613,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
             return () => {};
         };
 
-        
+       
 
 
         const mountSubwayRun = (container) => {
@@ -2623,8 +2623,8 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                         <span class="text-cyan-600 bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 w-full text-center">서브웨이 런</span>
                     </div>
                     <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
-                        <iframe 
-                            src="https://ktxsubway-bit.github.io/hasigamesu/" 
+                        <iframe
+                            src="https://ktxsubway-bit.github.io/hasigamesu/"
                             class="absolute inset-0 w-full h-full border-0"
                             allowfullscreen="true"
                             scrolling="no"
@@ -2684,11 +2684,11 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
             const livesDisplay = container.querySelector('#pk-lives');
             const feedbackMsg = container.querySelector('#pk-feedback');
             const gameContainer = container.querySelector('#pk-game-container');
-            
+           
             const startScreen = container.querySelector('#pk-start-screen');
             const gameOverScreen = container.querySelector('#pk-game-over-screen');
             const finalScoreDisplay = container.querySelector('#pk-final-score');
-            
+           
             const startBtn = container.querySelector('#pk-start-btn');
             const restartBtn = container.querySelector('#pk-restart-btn');
 
@@ -2725,7 +2725,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                 if (!isGameRunning || ball.state !== 'idle') return;
                 const pos = getCanvasPos(e);
                 const dist = Math.hypot(pos.x - ball.x, pos.y - ball.y);
-                if (dist < ball.radius * 3) { 
+                if (dist < ball.radius * 3) {
                     ball.state = 'dragging';
                     dragInfo.startX = ball.x; dragInfo.startY = ball.y;
                     dragInfo.currentX = pos.x; dragInfo.currentY = pos.y;
@@ -2734,7 +2734,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
 
             const handleMove = (e) => {
                 if (ball.state !== 'dragging') return;
-                if (e.cancelable) e.preventDefault(); 
+                if (e.cancelable) e.preventDefault();
                 const pos = getCanvasPos(e);
                 dragInfo.currentX = pos.x; dragInfo.currentY = pos.y;
             };
@@ -2743,13 +2743,13 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                 if (ball.state === 'dragging') {
                     const dx = dragInfo.startX - dragInfo.currentX;
                     const dy = dragInfo.startY - dragInfo.currentY;
-                    
+                   
                     if (dy <= 10) {
                         ball.state = 'idle';
                         return;
                     }
 
-                    const power = Math.min(Math.hypot(dx, dy) * 3, 1200); 
+                    const power = Math.min(Math.hypot(dx, dy) * 3, 1200);
                     const angle = Math.atan2(dy, dx);
 
                     ball.vx = Math.cos(angle) * power;
@@ -2773,7 +2773,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                     particles.push({
                         x: x, y: y,
                         vx: (Math.random() - 0.5) * 400,
-                        vy: (Math.random() - 0.5) * 400 - 200, 
+                        vy: (Math.random() - 0.5) * 400 - 200,
                         life: 0.5 + Math.random() * 0.5,
                         emoji: emoji,
                         size: 15 + Math.random() * 15,
@@ -2798,7 +2798,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
             function handleGoal() {
                 ball.state = 'done';
                 score++;
-                gameSpeed = 1 + (score * 0.1); 
+                gameSpeed = 1 + (score * 0.1);
                 showFeedback("GOAL!", "#ffeb3b");
                 createParticles(goal.x + goal.width/2, goal.y + goal.height/2, '🎉', 20);
                 createParticles(goal.x + goal.width/2, goal.y + goal.height/2, '⭐', 10);
@@ -2816,7 +2816,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                     showFeedback("MISS...", "#9e9e9e");
                 }
                 gameContainer.classList.remove('pk-shake');
-                void gameContainer.offsetWidth; 
+                void gameContainer.offsetWidth;
                 gameContainer.classList.add('pk-shake');
                 updateUI();
                 if (lives <= 0) setTimeout(gameOver, 1500);
@@ -2866,7 +2866,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
 
                 if (ball.state === 'shooting') {
                     ball.x += ball.vx * deltaTime;
-                    ball.y -= ball.vy * deltaTime; 
+                    ball.y -= ball.vy * deltaTime;
                     ball.rotation += (Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy)) * deltaTime * 0.05;
 
                     let depthRatio = Math.max(0.5, (ball.y - goal.y) / (ballStartPos.y - goal.y));
@@ -2917,7 +2917,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
 
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; ctx.lineWidth = 4;
                 ctx.strokeRect(goal.x - 30, goal.y + goal.height, goal.width + 60, 150);
-                
+               
                 ctx.beginPath(); ctx.arc(CANVAS_WIDTH / 2, goal.y + goal.height + 150, 60, 0, Math.PI, false); ctx.stroke();
 
                 ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; ctx.beginPath();
@@ -2938,7 +2938,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
 
                 if (ball.state === 'dragging') {
                     const dx = dragInfo.startX - dragInfo.currentX; const dy = dragInfo.startY - dragInfo.currentY;
-                    if (dy > 0) { 
+                    if (dy > 0) {
                         ctx.strokeStyle = 'rgba(255, 235, 59, 0.5)'; ctx.lineWidth = 4; ctx.setLineDash([10, 10]); ctx.beginPath();
                         ctx.moveTo(ball.x, ball.y); ctx.lineTo(ball.x + dx * 2, ball.y - dy * 2); ctx.stroke(); ctx.setLineDash([]);
                     }
@@ -2949,7 +2949,7 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
                 }
                 ctx.globalAlpha = 1.0;
 
-                ctx.save(); ctx.translate(ball.x, ball.y); ctx.rotate(ball.rotation); 
+                ctx.save(); ctx.translate(ball.x, ball.y); ctx.rotate(ball.rotation);
                 if (ball.state === 'shooting') {
                     ctx.fillStyle = 'rgba(0,0,0,0.3)'; let shadowOffset = (ball.baseRadius - ball.radius) * 2;
                     ctx.beginPath(); ctx.arc(0, shadowOffset, ball.radius, 0, Math.PI*2); ctx.fill();
@@ -2983,8 +2983,8 @@ const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했
 const mountgemini = (bell) => {
     container.innerHTML = `
             <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
-                <iframe 
-                    src="https://ktxsubway-bit.github.io/kgamegemini" 
+                <iframe
+                    src="https://ktxsubway-bit.github.io/kgamegemini"
                     class="absolute inset-0 w-full h-full border-0"
                     allowfullscreen="true"
                     scrolling="no"
@@ -2998,13 +2998,13 @@ const mountgemini = (bell) => {
         container.innerHTML = '';
     };
 };
-        
+       
 
 const mountGun = (container) => {
     container.innerHTML = `
         <div class="relative w-full h-[calc(100vh-100px)] rounded-2xl overflow-hidden border-4 border-slate-700 bg-black shadow-2xl">
             <iframe src="https://deadshot.io/" class="absolute inset-0 w-full h-full border-0" allow="autoplay; gamepad; fullscreen"></iframe>
-            
+           
             <div id="deadshot-notice" class="absolute top-4 left-4 z-50 bg-slate-900/90 text-white p-4 rounded-xl shadow-xl backdrop-blur-sm transition-all duration-500 border border-slate-700/50 max-w-xs">
                 <p class="text-xs text-slate-400 mb-1">안내 (5초 후 사라집니다)</p>
                 <p class="text-sm font-medium mb-2 text-slate-200">
@@ -3033,6 +3033,39 @@ const mountGun = (container) => {
     return () => {
         clearTimeout(timerId);
     };
+};
+
+
+
+const mountMineFun = (mineFunContainer) => {
+    // 대문자 C로 정확하게 일치시킴!
+    mineFunContainer.innerHTML = `
+        <div class="relative w-full h-[calc(100vh-100px)] rounded-2xl overflow-hidden border-4 border-slate-700 bg-black shadow-2xl">
+            <iframe src="https://minefun.io/" class="absolute inset-0 w-full h-full border-0" allow="autoplay; gamepad; fullscreen" allowfullscreen></iframe>
+           
+            <div id="minefun-notice" class="absolute top-4 left-4 z-50 bg-slate-900/90 text-white p-4 rounded-xl shadow-xl backdrop-blur-sm transition-all duration-500 border border-slate-700/50 max-w-xs">
+                <p class="text-xs text-slate-400 mb-1">안내 (5초 후 사라집니다)</p>
+                <p class="text-sm font-medium mb-2 text-slate-200">
+                    해당 게임의 저작권은 <span class="text-teal-400 font-bold">Vectaria</span>에게 있습니다.
+                </p>
+                <a href="https://minefun.io/" target="_blank" class="inline-flex items-center text-xs text-teal-400 hover:text-teal-300 underline font-semibold">
+                    마인펀IO 링크 바로가기 ↗
+                </a>
+            </div>
+        </div>
+    `;
+
+    setTimeout(() => {
+        const notice = document.getElementById('minefun-notice');
+        if (notice) {
+            notice.style.opacity = '0';
+            notice.style.transform = 'translateY(-10px)';
+           
+            setTimeout(() => {
+                notice.remove();
+            }, 500);
+        }
+    }, 5000);
 };
 
 
@@ -3071,6 +3104,7 @@ const mountGun = (container) => {
   // 2. 영어 (알파벳순)      
   // { id: 'bell',     title: 'BELLRUN!',          icon: 'bell',   color: 'bg-teal-100 text-teal-600',      mount: mountgemini },
   { id: 'container',     title: 'DEADSHOT',           icon: 'crosshair',      color: 'bg-teal-100 text-teal-600',      mount: mountGun },
+  { id: 'mineFunContainer',     title: 'MineFun.IO',           icon: 'person-standing',      color: 'bg-teal-100 text-teal-600',      mount: mountMineFun },
   // 3. 숫자 (오름차순)
   { id: 'clicker',    title: '10초 광클',           icon: 'mouse-pointer-click', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountClicker },
   { id: '2048',       title: '2048',               icon: 'layout-grid',          color: 'bg-amber-100 text-amber-800',    mount: mount2048 },
@@ -3099,10 +3133,10 @@ const mountGun = (container) => {
         window.openGame = (id) => {
             const game = GAMES.find(g => g.id === id);
             if(!game) return;
-            
+           
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
-            
+           
             document.getElementById('game-header-title').innerHTML = `
                 <span class="p-2 rounded-lg mr-3 ${game.color}"><i data-lucide="${game.icon}" class="w-6 h-6"></i></span>
                 ${game.title}
@@ -3111,7 +3145,7 @@ const mountGun = (container) => {
 
             const container = document.getElementById('game-container');
             container.innerHTML = '';
-            
+           
             // 전체 꽉 찬 화면이 필요한 게임 처리 (패딩 제거)
             if(id === 'jump3d' || id === 'fps' || id === 'container') {
                 container.classList.remove('p-4');
@@ -3125,13 +3159,13 @@ const mountGun = (container) => {
         };
 
         window.closeGame = () => {
-            if(window.currentCleanup) { 
-                window.currentCleanup(); 
-                window.currentCleanup = null; 
+            if(window.currentCleanup) {
+                window.currentCleanup();
+                window.currentCleanup = null;
             }
             document.getElementById('game-screen').classList.add('hidden');
             document.getElementById('menu-screen').classList.remove('hidden');
-            
+           
             // 화면 및 iframe 등 잔여 리소스 완전 초기화 (게임 소리 계속 나는 문제 해결)
             document.getElementById('game-container').innerHTML = '';
         };
