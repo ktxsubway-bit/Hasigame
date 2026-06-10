@@ -3079,7 +3079,13 @@ const mountChess = (chessGameContainer) => {
     `;
 };        
 
-
+const mountChats = (chatContainer) => {
+    chatContainer.innerHTML = `
+        <div class="relative w-full h-[calc(100vh-100px)] rounded-2xl overflow-hidden border-4 border-slate-700 bg-black shadow-2xl">
+            <iframe src="https://ktxsubway-bit.github.io/key/" class="absolute inset-0 w-full h-full border-0" allow="autoplay; gamepad; fullscreen" allowfullscreen></iframe>
+        </div>
+    `;
+};
 
         // ==========================================
         // 메인 데이터 & 라우팅 (전체 28개 게임 - 한글/영어/숫자순 정렬)
@@ -3104,6 +3110,7 @@ const mountChess = (chessGameContainer) => {
   { id: 'motorcycle', title: '오토바이 3D',         icon: 'gauge',                color: 'bg-orange-100 text-orange-700', mount: mountMotorcycle },
   // { id: 'fps',        title: '김밥천국 시뮬레이터',     icon: 'rice',                color: 'bg-red-100 text-red-600',       mount: mountFps },
   { id: 'memory',     title: '카드 맞추기',         icon: 'brain-circuit',        color: 'bg-purple-100 text-purple-600', mount: mountMemory },
+  { id: 'chatContainer',     title: '커뮤니티',         icon: 'box',        color: 'bg-purple-100 text-purple-600', mount: mountChats },          
   { id: 'timing',     title: '타이밍 맞추기',       icon: 'crosshair',            color: 'bg-indigo-100 text-indigo-700', mount: mountTiming },
   { id: 'ufo',        title: '탕탕 이모지 특공대',   icon: 'rocket',              color: 'bg-purple-100 text-purple-600', mount: mountUfo },
   { id: 'tetris',     title: '테트리스',             icon: 'blocks',              color: 'bg-indigo-100 text-indigo-600', mount: mountTetris },
