@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>수유게임</title>
-    <link class="icon" rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🎮</text></svg>">
     <!-- Tailwind CSS (CDN) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons (CDN) -->
@@ -62,19 +62,6 @@
                 SUYU!
             </h1>
             <p class="text-slate-500 font-medium text-lg">다양한 미니게임을 즐겨보세요</p>
-
-            <!-- 닉네임 설정 및 순위표 버튼 행 -->
-            <div class="mt-6 flex flex-col sm:flex-row items-center justify-center gap-4 max-w-md mx-auto bg-white p-4 rounded-3xl shadow-sm border border-slate-100">
-                <div class="flex items-center w-full gap-2">
-                    <i data-lucide="user" class="w-5 h-5 text-indigo-500 shrink-0"></i>
-                    <input id="nickname-input-global" type="text" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-sm font-bold focus:outline-none focus:border-indigo-500 text-center" placeholder="닉네임 입력" value="">
-                    <button onclick="window.updateNickname()" class="bg-indigo-600 text-white text-xs font-bold px-4 py-2 rounded-xl hover:bg-indigo-700 shrink-0 shadow-sm transition">변경</button>
-                </div>
-                <button onclick="window.openLeaderboard()" class="w-full sm:w-auto bg-amber-500 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-amber-600 transition shadow-sm flex items-center justify-center gap-1.5 shrink-0">
-                    <i data-lucide="trophy" class="w-4 h-4"></i>
-                    순위표
-                </button>
-            </div>
         </header>
 
         <!-- 공지사항 배너 -->
@@ -116,26 +103,6 @@
     </div>
 
     <!-- ========================================== -->
-    <!-- 실시간 순위표 모달 -->
-    <!-- ========================================== -->
-    <div id="leaderboard-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden">
-        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-lg mx-4 flex flex-col max-h-[85vh]">
-            <div class="flex justify-between items-center mb-4 shrink-0">
-                <h2 class="text-2xl font-black text-slate-800 flex items-center"><i data-lucide="trophy" class="mr-2 text-amber-500"></i> 명예의 전당 (순위표)</h2>
-                <button onclick="window.closeLeaderboard()" class="p-2 hover:bg-slate-100 rounded-full"><i data-lucide="x" class="w-6 h-6"></i></button>
-            </div>
-            <!-- 게임별 선택 탭 -->
-            <div class="flex gap-2 overflow-x-auto pb-2 mb-4 shrink-0 border-b border-slate-100" id="leaderboard-tabs">
-                <!-- 탭 목록이 스크립트를 통해 동적 생성됩니다. -->
-            </div>
-            <!-- 랭킹 리스트 영역 -->
-            <div class="flex-1 overflow-y-auto space-y-2 pr-1" id="leaderboard-list">
-                <div class="text-center text-slate-400 py-12">데이터를 불러오는 중...</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
     <!-- 관리자 로그인 모달 -->
     <!-- ========================================== -->
     <div id="admin-login-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden">
@@ -169,7 +136,7 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot, collection } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // 파이어베이스 설정값
         const firebaseConfig = {
@@ -192,9 +159,6 @@
         let db = null;
         let noticeRef = null;
         let auth = null;
-
-        // 닉네임 기본 설정 및 로컬 스토리지 연동
-        window.userNickname = localStorage.getItem('suyu_nickname') || `플레이어_${Math.floor(Math.random() * 90000 + 10000)}`;
 
         // 공지사항 표시 업데이트 함수 (길면 스크롤)
         window.updateNoticeDisplay = (text) => {
@@ -260,19 +224,6 @@
                     currentUser = user;
                     document.getElementById('user-info').innerText = `접속 ID: ${user.uid.substring(0, 8)}... (클라우드 연결됨)`;
                    
-                    // 유저 프로필 데이터 로드
-                    const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', user.uid);
-                    onSnapshot(profileRef, (snap) => {
-                        if (snap.exists() && snap.data().nickname) {
-                            window.userNickname = snap.data().nickname;
-                            localStorage.setItem('suyu_nickname', window.userNickname);
-                            const inputEl = document.getElementById('nickname-input-global');
-                            if (inputEl) inputEl.value = window.userNickname;
-                        } else {
-                            setDoc(profileRef, { nickname: window.userNickname }, { merge: true });
-                        }
-                    });
-
                     onSnapshot(noticeRef, (docSnap) => {
                         if (docSnap.exists()) {
                             window.currentNotice = docSnap.data().text;
@@ -295,202 +246,6 @@
         }
 
         // ==========================================
-        // 닉네임 설정 및 점수 연동 전역 함수
-        // ==========================================
-        window.updateNickname = async () => {
-            const input = document.getElementById('nickname-input-global');
-            if (!input) return;
-            const newName = input.value.trim();
-            if (!newName) {
-                window.showAlert("닉네임을 정확히 입력해주세요!");
-                return;
-            }
-            window.userNickname = newName;
-            localStorage.setItem('suyu_nickname', newName);
-
-            if (db && currentUser) {
-                try {
-                    const profileRef = doc(db, 'artifacts', appId, 'public', 'data', 'profiles', currentUser.uid);
-                    await setDoc(profileRef, { nickname: newName }, { merge: true });
-                    window.showAlert("닉네임 변경 완료! 이후 등록 기록에 적용됩니다.");
-                } catch(e) {
-                    console.error("Profile save failed", e);
-                }
-            } else {
-                window.showAlert("로컬 닉네임이 임시 변경되었습니다.");
-            }
-        };
-
-        window.saveGameScore = async (gameId, score) => {
-            if (!currentUser || !db) {
-                window.showAlert(`오프라인 모드: 기록이 클라우드에 연동되지 않았습니다. (${score}점)`);
-                return;
-            }
-
-            try {
-                // RULE 1 준수한 Public 점수 경로 사용
-                const scoreRef = doc(db, 'artifacts', appId, 'public', 'data', 'scores', `${gameId}_${currentUser.uid}`);
-                const snap = await getDoc(scoreRef);
-                
-                let isHighScore = true;
-                if (snap.exists()) {
-                    const prevScore = snap.data().score;
-                    if (prevScore >= score) {
-                        isHighScore = false;
-                    }
-                }
-
-                if (isHighScore) {
-                    await setDoc(scoreRef, {
-                        gameId: gameId,
-                        userId: currentUser.uid,
-                        score: score,
-                        username: window.userNickname,
-                        timestamp: new Date().toISOString()
-                    }, { merge: true });
-                    window.showAlert(`🎉 대단해요! 신기록 갱신: ${score}점 순위표 연동 완료!`);
-                } else {
-                    window.showAlert(`최고 점수(${snap.data().score}점)를 넘지 못했습니다. 화이팅!`);
-                }
-            } catch(e) {
-                console.error("Score submission error:", e);
-                window.showAlert("기록을 동기화하는 데 실패했습니다.");
-            }
-        };
-
-        // ==========================================
-        // 순위표 모달 제어 및 실시간 렌더링
-        // ==========================================
-        const SCORE_GAMES = [
-            { id: 'gather', name: '먹이 줍기' },
-            { id: 'fruit', name: '과일 받기' },
-            { id: 'whack', name: '두더지 잡기' },
-            { id: 'math', name: '산수 퀴즈' },
-            { id: 'clicker', name: '10초 광클' },
-            { id: 'tetris', name: '테트리스' },
-            { id: 'color', name: '색깔 찾기' },
-            { id: 'simon', name: '패턴 기억' },
-            { id: 'bomb', name: '폭탄 피하기' },
-            { id: 'typing', name: '단어 타자' },
-            { id: 'snake', name: '스네이크' },
-            { id: '2048', name: '2048' },
-            { id: 'breakout', name: '벽돌 깨기' },
-            { id: 'timing', name: '타이밍 맞추기' },
-            { id: 'motorcycle', name: '오토바이 3D' },
-            { id: 'penalty', name: '승부차기' }
-        ];
-
-        window.selectedLeaderboardGame = 'gather';
-        let scoresList = [];
-        let unsubscribeScores = null;
-
-        window.openLeaderboard = () => {
-            document.getElementById('leaderboard-modal').classList.remove('hidden');
-            window.renderLeaderboardTabs();
-
-            // RULE 2 (Simple Collection query) 준수하여 쿼리 처리
-            if (db && currentUser && !unsubscribeScores) {
-                const scoresCol = collection(db, 'artifacts', appId, 'public', 'data', 'scores');
-                unsubscribeScores = onSnapshot(scoresCol, (snap) => {
-                    scoresList = [];
-                    snap.forEach(doc => {
-                        scoresList.push(doc.data());
-                    });
-                    window.selectLeaderboardTab(window.selectedLeaderboardGame);
-                }, (error) => {
-                    console.warn("Firestore scores onSnapshot error:", error);
-                });
-            } else if (scoresList.length > 0) {
-                window.selectLeaderboardTab(window.selectedLeaderboardGame);
-            }
-        };
-
-        window.closeLeaderboard = () => {
-            document.getElementById('leaderboard-modal').classList.add('hidden');
-            if (unsubscribeScores) {
-                unsubscribeScores();
-                unsubscribeScores = null;
-            }
-        };
-
-        window.renderLeaderboardTabs = () => {
-            const tabsContainer = document.getElementById('leaderboard-tabs');
-            if (!tabsContainer) return;
-            tabsContainer.innerHTML = SCORE_GAMES.map(g => {
-                const activeClass = window.selectedLeaderboardGame === g.id 
-                    ? 'bg-indigo-600 text-white' 
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200';
-                return `
-                    <button onclick="window.selectLeaderboardTab('${g.id}')" class="px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${activeClass}">
-                        ${g.name}
-                    </button>
-                `;
-            }).join('');
-        };
-
-        window.selectLeaderboardTab = (gameId) => {
-            window.selectedLeaderboardGame = gameId;
-            window.renderLeaderboardTabs();
-
-            const listContainer = document.getElementById('leaderboard-list');
-            if (!listContainer) return;
-
-            // RULE 2 준수를 위해 인메모리(JS 메모리상)에서 고성능 정렬 및 필터링 수행
-            const filtered = scoresList
-                .filter(item => item.gameId === gameId)
-                .sort((a, b) => b.score - a.score);
-
-            if (filtered.length === 0) {
-                listContainer.innerHTML = `
-                    <div class="text-center text-slate-400 py-12">
-                        <i data-lucide="award" class="w-12 h-12 mx-auto text-slate-300 mb-3 animate-pulse"></i>
-                        <p class="font-medium text-sm">아직 등록된 기록이 없습니다.<br>첫 번째 주인공이 되어보세요!</p>
-                    </div>
-                `;
-                lucide.createIcons();
-                return;
-            }
-
-            listContainer.innerHTML = filtered.map((item, idx) => {
-                let medal = '';
-                let rankColor = 'text-slate-500 bg-slate-100';
-                if (idx === 0) { medal = '👑'; rankColor = 'text-amber-600 bg-amber-100 border border-amber-200'; }
-                else if (idx === 1) { medal = '🥈'; rankColor = 'text-slate-600 bg-slate-100 border border-slate-200'; }
-                else if (idx === 2) { medal = '🥉'; rankColor = 'text-orange-600 bg-orange-100 border border-orange-200'; }
-                
-                const isMe = currentUser && item.userId === currentUser.uid;
-                const bgClass = isMe ? 'bg-indigo-50 border-2 border-indigo-200' : 'bg-slate-50 border border-slate-100';
-                const unit = gameId === 'motorcycle' ? 'm' : gameId === 'clicker' ? '클릭' : '점';
-
-                // XSS 안전 이스케이프 처리
-                const cleanName = (item.username || '익명')
-                    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
-
-                return `
-                    <div class="flex items-center justify-between p-4 rounded-2xl transition-all ${bgClass}">
-                        <div class="flex items-center gap-3">
-                            <span class="w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${rankColor}">
-                                ${idx + 1}
-                            </span>
-                            <div>
-                                <p class="font-bold text-slate-800 flex items-center gap-1.5">
-                                    ${cleanName} ${medal}
-                                    ${isMe ? '<span class="bg-indigo-600 text-white text-[10px] px-1.5 py-0.5 rounded-full font-black">나</span>' : ''}
-                                </p>
-                                <p class="text-[11px] text-slate-400">${new Date(item.timestamp).toLocaleDateString()}</p>
-                            </div>
-                        </div>
-                        <div class="text-right">
-                            <span class="text-xl font-black text-indigo-600">${item.score}</span>
-                            <span class="text-xs text-slate-400 ml-0.5">${unit}</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-            lucide.createIcons();
-        };
-
-        // ==========================================
         // 기본 UI 및 관리자 기능
         // ==========================================
         window.toggleFullScreen = () => {
@@ -503,7 +258,6 @@
 
         document.addEventListener('fullscreenchange', () => {
             const icon = document.getElementById('fs-icon-global');
-            if (!icon) return;
             if (document.fullscreenElement) icon.setAttribute('data-lucide', 'minimize');
             else icon.setAttribute('data-lucide', 'maximize');
             lucide.createIcons();
@@ -789,9 +543,6 @@
                         document.getElementById('gf-overtext').innerHTML = `<span class="block text-sm font-medium mb-1 text-emerald-300">획득 점수</span>${score}`;
                         document.getElementById('gf-overtext').classList.remove('hidden');
                         document.getElementById('gf-start').textContent = '다시하기';
-                        
-                        // [순위표 연동] 먹이 줍기 점수 전송
-                        if (window.saveGameScore) window.saveGameScore('gather', score);
                     }
                 }, 1000);
             };
@@ -892,9 +643,6 @@
                     document.getElementById('cf-final').innerHTML = `<span class="text-slate-300 text-sm block mb-1">최종 점수</span><span class="text-4xl text-indigo-400">${score}</span>`;
                     document.getElementById('cf-final').classList.remove('hidden');
                     document.getElementById('cf-btn').textContent = '다시하기';
-
-                    // [순위표 연동] 과일 받기 점수 전송
-                    if (window.saveGameScore) window.saveGameScore('fruit', score);
                 } else { reqId = requestAnimationFrame(loop); }
             };
 
@@ -1085,9 +833,6 @@
                         clearInterval(tMole); clearInterval(tGame);
                         const btn = document.getElementById('wa-start');
                         btn.textContent = '다시 시작하기'; btn.classList.remove('hidden');
-
-                        // [순위표 연동] 두더지 잡기 점수 전송
-                        if (window.saveGameScore) window.saveGameScore('whack', score);
                     }
                 }, 1000);
                 render();
@@ -1201,9 +946,6 @@
                         document.getElementById('mq-start-box').classList.remove('hidden');
                         document.getElementById('mq-start-msg').innerHTML = `<span class="text-sm text-slate-500 block mb-1">도전 종료!</span><span class="text-3xl text-indigo-600 block">총 ${score}점 획득 🎉</span>`;
                         document.getElementById('mq-start').textContent = '다시 도전하기';
-
-                        // [순위표 연동] 산수 퀴즈 점수 전송
-                        if (window.saveGameScore) window.saveGameScore('math', score);
                     }
                 }, 1000);
             };
@@ -1255,9 +997,6 @@
                             btn.textContent = '끝!'; btn.disabled = true; btn.classList.add('opacity-50', 'grayscale');
                             document.getElementById('sc-fin').classList.remove('hidden');
                             document.getElementById('sc-res').innerHTML = `<span class="text-sm text-slate-500 block mb-2 font-bold">초당 클릭 속도</span><span class="text-indigo-600 text-4xl">${(clk/10).toFixed(1)} CPS 🔥</span>`;
-
-                            // [순위표 연동] 10초 광클 점수 전송 (누른 횟수 clk)
-                            if (window.saveGameScore) window.saveGameScore('clicker', clk);
                         }
                     }, 50);
                 }
@@ -1333,9 +1072,6 @@
                     document.getElementById('te-ov').classList.remove('hidden');
                     document.getElementById('te-msg').classList.remove('hidden');
                     document.getElementById('te-st').textContent = '다시하기';
-
-                    // [순위표 연동] 테트리스 점수 전송
-                    if (window.saveGameScore) window.saveGameScore('tetris', score);
                 }
             };
 
@@ -1476,9 +1212,6 @@
                         document.getElementById('co-msg').innerHTML = `<span class="block text-sm text-slate-300 font-medium mb-1">최종 점수</span>${score}점`;
                         document.getElementById('co-msg').classList.remove('hidden');
                         document.getElementById('co-st').textContent = '다시하기';
-
-                        // [순위표 연동] 색깔 찾기 점수 전송
-                        if (window.saveGameScore) window.saveGameScore('color', score);
                     }
                 }, 1000);
             };
@@ -1494,7 +1227,7 @@
             container.innerHTML = `
                 <div class="flex flex-col items-center w-full touch-none select-none mt-8">
                     <div class="text-xl font-bold mb-10 flex justify-between w-full max-w-sm px-8">
-                        <span class="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 w-full text-center">기억한 패턴: <span id="sm-score" class="text-indigo-600 font-black text-2xl ml-2">0</span></span>
+                        <span class="bg-white px-6 py-3 rounded-2xl shadow-sm border border-slate-100 w-full text-center text-slate-500">기억한 패턴: <span id="sm-score" class="text-indigo-600 font-black text-2xl ml-2">0</span></span>
                     </div>
                     <div class="relative w-80 h-80 bg-slate-900 rounded-full p-5 flex flex-wrap shadow-2xl border-8 border-slate-800">
                         <div id="sm-ov" class="absolute inset-0 bg-slate-900/80 rounded-full flex flex-col items-center justify-center z-10 text-white backdrop-blur-sm">
@@ -1549,9 +1282,6 @@
                     document.getElementById('sm-msg').classList.remove('hidden');
                     document.getElementById('sm-st').textContent = '다시하기';
                     document.getElementById('sm-center').textContent = '대기중';
-
-                    // [순위표 연동] 패턴 기억 점수 전송
-                    if (window.saveGameScore) window.saveGameScore('simon', score);
                 } else if(pSeq.length === seq.length) {
                     score++; document.getElementById('sm-score').textContent = score;
                     show = true; setTimeout(next, 1000);
@@ -1621,9 +1351,6 @@
                     document.getElementById('ab-final').innerHTML = `<span class="block text-sm text-slate-400 font-medium mb-1">최종 점수</span><span class="text-rose-400 text-3xl font-black">${Math.floor(score/10)}</span>`;
                     document.getElementById('ab-final').classList.remove('hidden');
                     document.getElementById('ab-st').textContent = '다시하기';
-
-                    // [순위표 연동] 폭탄 피하기 점수 전송
-                    if (window.saveGameScore) window.saveGameScore('bomb', Math.floor(score/10));
                 } else reqId = requestAnimationFrame(loop);
             };
 
@@ -1685,9 +1412,6 @@
                         document.getElementById('tp-st-box').classList.remove('hidden');
                         document.getElementById('tp-msg').innerHTML = `<span class="text-sm text-slate-500 block mb-1">도전 종료!</span><span class="text-3xl text-fuchsia-600 block">총 ${score}점 획득 🎉</span>`;
                         document.getElementById('tp-st').textContent = `다시 하기`;
-
-                        // [순위표 연동] 단어 타자 점수 전송
-                        if (window.saveGameScore) window.saveGameScore('typing', score);
                     }
                 }, 1000);
             };
@@ -1714,24 +1438,28 @@
             return () => clearInterval(tId);
         };
 
-        const mountBus = (container) => {
-            container.innerHTML = `
-                <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
-                    <iframe
-                        src="https://ktxsubway-bit.github.io/hasigamebackrom"
-                        class="absolute inset-0 w-full h-full border-0"
-                        allowfullscreen="true"
-                        scrolling="no"
-                        allow="autoplay; fullscreen; keyboard"
-                    ></iframe>
-                </div>
-            `;
-            return () => {
-                container.innerHTML = '';
-            };
-        };
+/**
+ * 데드샷 IO 게임 마운트 함수 (상단 탭 레이아웃 버전)
+ * @param {HTMLElement} container - 게임이 들어갈 부모 요소
+ */
+const mountBus = (container) => { // ◀ 인자 이름을 container로 수정했습니다.
+    container.innerHTML = `
+        <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
+            <iframe
+                src="https://ktxsubway-bit.github.io/hasigamebackrom"
+                class="absolute inset-0 w-full h-full border-0"
+                allowfullscreen="true"
+                scrolling="no"
+                allow="autoplay; fullscreen; keyboard"
+            ></iframe>
+        </div>
+    `; // ◀ 불필요하게 닫혀있던 </div> 한 개를 제거했습니다.
 
-        const mountSnake = (container) => {
+    return () => {
+        container.innerHTML = '';
+    };
+};
+        const mountSnake = (snake) => {
             const SIZE = 20;
             let play=false, score=0, tId=null;
             let player = [], pDir = {x:0,y:-1}, nextDir = {x:0,y:-1};
@@ -1807,9 +1535,6 @@
                     document.getElementById('sn-msg').innerHTML = `<span class="text-sm block text-slate-300 font-medium mb-1">최종 점수</span><span class="text-rose-400 text-4xl">${score}</span>`;
                     document.getElementById('sn-msg').classList.remove('hidden');
                     document.getElementById('sn-st').textContent = '다시하기';
-
-                    // [순위표 연동] 스네이크 점수 전송
-                    if (window.saveGameScore) window.saveGameScore('snake', score);
                     return;
                 }
 
@@ -1971,9 +1696,6 @@
                         document.getElementById('p-ov').classList.remove('hidden');
                         document.getElementById('p-msg').classList.remove('hidden');
                         document.getElementById('p-st').textContent = '다시하기';
-
-                        // [순위표 연동] 2048 점수 전송
-                        if (window.saveGameScore) window.saveGameScore('2048', score);
                     }
                 }
             };
@@ -2086,18 +1808,12 @@
                     document.getElementById('br-msg').textContent = '앗! 떨어졌다!';
                     document.getElementById('br-msg').classList.remove('hidden');
                     document.getElementById('br-st').textContent = '다시하기';
-
-                    // [순위표 연동] 벽돌 깨기 점수 전송
-                    if (window.saveGameScore) window.saveGameScore('breakout', score);
                 } else if(hitCount === 30) {
                     play=false;
                     document.getElementById('br-ov').classList.remove('hidden');
                     document.getElementById('br-msg').textContent = '🎉 퍼펙트! 🎉';
                     document.getElementById('br-msg').classList.remove('hidden');
                     document.getElementById('br-st').textContent = '다시하기';
-
-                    // [순위표 연동] 벽돌 깨기 점수 전송
-                    if (window.saveGameScore) window.saveGameScore('breakout', score);
                 } else reqId = requestAnimationFrame(loop);
             };
 
@@ -2183,9 +1899,6 @@
                     msg.innerHTML = `<span class="text-sm block text-slate-300 font-medium mb-1">최종 점수</span>${score}점`;
                     msg.classList.remove('hidden');
                     stBtn.textContent = '다시하기';
-
-                    // [순위표 연동] 타이밍 맞추기 점수 전송
-                    if (window.saveGameScore) window.saveGameScore('timing', score);
                 }
             };
 
@@ -2600,281 +2313,846 @@
                     </div>
                     <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
                         <iframe
-                            src="https://hasigame-bike.web.app/"
+                            src="https://ktxsubway-bit.github.io/hasigameb/"
                             class="absolute inset-0 w-full h-full border-0"
                             allowfullscreen="true"
                             scrolling="no"
-                            allow="autoplay; fullscreen; keyboard"
                         ></iframe>
                     </div>
                 </div>
             `;
-            return () => {
-                container.innerHTML = '';
-            };
+            return () => {};
         };
 
         const mountMotorcycle = (container) => {
-            let score = 0, speed = 0, distance = 0, isPlaying = false;
-            let reqId = null;
-           
             container.innerHTML = `
-                <div class="flex flex-col items-center w-full max-w-md mx-auto touch-none select-none mt-4">
-                    <div class="flex justify-between w-full px-4 mb-4 text-xl font-bold">
-                        <span class="text-indigo-600 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100">거리: <span id="moto-score">0</span>m</span>
-                        <span class="text-rose-500 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100">속도: <span id="moto-speed">0</span>km/h</span>
+                <div class="flex flex-col items-center w-full touch-none select-none mt-4">
+                    <div class="flex justify-between w-full max-w-sm px-4 mb-4 font-bold">
+                        <span class="bg-white border border-slate-100 px-6 py-2 rounded-xl shadow-sm w-full text-center text-orange-600 text-xl">질주 점수: <span id="mt-score" class="font-black text-2xl ml-1">0</span></span>
                     </div>
-                    <div class="relative w-full bg-slate-900 rounded-3xl overflow-hidden border-4 border-slate-800 shadow-2xl flex flex-col items-center justify-center" style="height: 320px;">
-                        <div id="moto-start-overlay" class="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center z-20 text-white backdrop-blur-md">
-                            <p class="text-3xl font-black mb-4 text-orange-400">오토바이 3D</p>
-                            <p id="moto-final-score" class="text-lg font-bold mb-6 hidden"></p>
-                            <button id="moto-start-btn" class="bg-orange-500 hover:bg-orange-600 px-8 py-3 rounded-full font-bold text-lg shadow-xl transition-all">주행 시작!</button>
-                        </div>
-                        <!-- 도로 애니메이션 효과용 캔버스 또는 배경 요소 -->
-                        <div id="moto-road" class="absolute inset-0 overflow-hidden flex justify-center">
-                            <!-- 지평선 -->
-                            <div class="absolute top-[40%] left-0 right-0 h-[60%] bg-slate-800"></div>
-                            <!-- 하늘 -->
-                            <div class="absolute top-0 left-0 right-0 h-[40%] bg-sky-900 flex items-end justify-center">
-                                <div class="text-sky-800 text-sm font-bold tracking-widest pb-2">SUYU SPEEDWAY</div>
-                            </div>
-                            <!-- 중앙선 차선 -->
-                            <div id="moto-lines" class="absolute top-[40%] bottom-0 w-2 bg-amber-500 transform origin-top" style="clip-path: polygon(45% 0%, 55% 0%, 100% 100%, 0% 100%);"></div>
-                            <!-- 오토바이 플레이어 그래픽 -->
-                            <div id="moto-player-sprite" class="absolute bottom-6 text-7xl animate-bounce">🏍️</div>
+                    <div id="mt-board" class="relative bg-slate-900 w-full max-w-sm h-80 rounded-3xl overflow-hidden border-[6px] border-slate-800 shadow-2xl cursor-pointer">
+                        <div id="mt-canvas-container" class="absolute inset-0"></div>
+                        <div id="mt-ov" class="absolute inset-0 bg-slate-900/80 flex flex-col items-center justify-center z-30 text-white backdrop-blur-sm">
+                            <p id="mt-msg" class="text-4xl font-black mb-4 hidden text-rose-400 drop-shadow-lg">💥 쾅!</p>
+                            <p id="mt-final" class="mb-6 font-bold hidden"></p>
+                            <button id="mt-st" class="bg-orange-500 hover:bg-orange-600 text-white px-10 py-4 rounded-full font-black text-xl shadow-xl transition-colors">출발!</button>
                         </div>
                     </div>
-                    <!-- 가속 버튼 -->
-                    <div class="w-full mt-6 flex justify-center">
-                        <button id="moto-accel-btn" class="w-32 h-32 rounded-full bg-gradient-to-br from-orange-400 to-red-600 text-white font-black text-2xl shadow-[0_8px_30px_rgba(234,88,12,0.4)] active:scale-95 transition-all border-4 border-orange-200">ACCEL</button>
+                    <div class="flex justify-center space-x-6 mt-8 w-full max-w-sm px-4">
+                        <button id="mt-left" class="bg-white border border-slate-200 p-6 rounded-2xl flex-1 flex justify-center shadow-sm active:bg-slate-100 text-slate-600 transition-colors"><i data-lucide="chevron-left" class="w-8 h-8"></i></button>
+                        <button id="mt-right" class="bg-white border border-slate-200 p-6 rounded-2xl flex-1 flex justify-center shadow-sm active:bg-slate-100 text-slate-600 transition-colors"><i data-lucide="chevron-right" class="w-8 h-8"></i></button>
                     </div>
+                    <p class="mt-6 text-sm text-slate-500 font-medium">좌우로 차들을 피하며 고속도로를 질주해!</p>
                 </div>
             `;
+            lucide.createIcons();
 
-            const scoreDisp = document.getElementById('moto-score');
-            const speedDisp = document.getElementById('moto-speed');
-            const startOverlay = document.getElementById('moto-start-overlay');
-            const finalScoreDisp = document.getElementById('moto-final-score');
-            const startBtn = document.getElementById('moto-start-btn');
-            const accelBtn = document.getElementById('moto-accel-btn');
-            const lines = document.getElementById('moto-lines');
+            let play = false, score = 0, reqId;
+            let targetX = 0, lastT = 0, obstacles = [];
 
-            let lineOffset = 0;
+            const canvasContainer = document.getElementById('mt-canvas-container');
+            const width = canvasContainer.clientWidth || 300;
+            const height = canvasContainer.clientHeight || 300;
+
+            const scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0f172a);
+            scene.fog = new THREE.Fog(0x0f172a, 20, 100);
+
+            const camera = new THREE.PerspectiveCamera(60, width / height, 0.1, 150);
+            camera.position.set(0, 4, 8);
+            camera.lookAt(0, 1, -10);
+
+            const renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            canvasContainer.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.4);
+            scene.add(ambientLight);
+            const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
+            dirLight.position.set(10, 20, 5);
+            scene.add(dirLight);
+
+            const roadGeo = new THREE.PlaneGeometry(30, 300);
+            const roadMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
+            const road = new THREE.Mesh(roadGeo, roadMat);
+            road.rotation.x = -Math.PI / 2;
+            scene.add(road);
+
+            const lightPoles = [];
+            for (let i=0; i<10; i++) {
+                const poleGrp = new THREE.Group();
+                const poleGeo = new THREE.CylinderGeometry(0.1, 0.1, 4);
+                const poleMat = new THREE.MeshBasicMaterial({color: 0x555555});
+                const pole = new THREE.Mesh(poleGeo, poleMat);
+                pole.position.set(0, 2, 0);
+                const bulb = new THREE.Mesh(new THREE.SphereGeometry(0.4), new THREE.MeshBasicMaterial({color: 0xffaa00}));
+                bulb.position.set(0.5, 4, 0);
+                poleGrp.add(pole); poleGrp.add(bulb);
+                poleGrp.position.set(-8.5, 0, -i*20);
+                scene.add(poleGrp);
+                lightPoles.push(poleGrp);
+            }
+
+            const createMoto = () => {
+                const moto = new THREE.Group();
+                const wGeo = new THREE.CylinderGeometry(0.4, 0.4, 0.15, 16); wGeo.rotateZ(Math.PI/2);
+                const wMat = new THREE.MeshStandardMaterial({color: 0x111111, roughness:0.9});
+                const wF = new THREE.Mesh(wGeo, wMat); wF.position.set(0, 0.4, -1.2);
+                const wB = new THREE.Mesh(wGeo, wMat); wB.position.set(0, 0.4, 1.2);
+                moto.add(wF); moto.add(wB);
+
+                const bodyGeo = new THREE.BoxGeometry(0.6, 0.6, 2.2);
+                const bodyMat = new THREE.MeshStandardMaterial({color: 0xea580c});
+                const body = new THREE.Mesh(bodyGeo, bodyMat); body.position.set(0, 0.7, 0);
+                moto.add(body);
+
+                const riderGrp = new THREE.Group();
+                const rBody = new THREE.Mesh(new THREE.BoxGeometry(0.6, 1, 0.6), new THREE.MeshStandardMaterial({color: 0x1e293b}));
+                rBody.position.set(0, 1.2, 0.2); rBody.rotation.x = Math.PI/6;
+                const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.35, 16, 16), new THREE.MeshStandardMaterial({color: 0xffffff}));
+                helmet.position.set(0, 1.7, -0.2);
+                riderGrp.add(rBody); riderGrp.add(helmet);
+                moto.add(riderGrp);
+
+                const headLight = new THREE.PointLight(0xffffee, 1.5, 50);
+                headLight.position.set(0, 0.8, -1.2);
+                moto.add(headLight);
+
+                return moto;
+            };
+
+            const playerMoto = createMoto();
+            scene.add(playerMoto);
+
+            const lines = [];
+            for(let i=0; i<15; i++) {
+                [-2.5, 2.5].forEach(lx => {
+                    const l = new THREE.Mesh(new THREE.PlaneGeometry(0.2, 2), new THREE.MeshBasicMaterial({color:0xffffff}));
+                    l.rotation.x = -Math.PI/2; l.position.set(lx, 0.01, -i*8);
+                    scene.add(l); lines.push(l);
+                });
+            }
 
             const start = () => {
-                score = 0; distance = 0; speed = 0; isPlaying = true;
-                startOverlay.classList.add('hidden');
-                updateUI();
+                play=true; score=0; targetX=0; lastT=performance.now();
+                playerMoto.position.set(0,0,3); playerMoto.rotation.set(0,0,0);
+                document.getElementById('mt-score').textContent = 0;
+                document.getElementById('mt-ov').classList.add('hidden');
+                obstacles.forEach(o=>scene.remove(o.mesh)); obstacles=[];
                 reqId = requestAnimationFrame(loop);
             };
 
-            const updateUI = () => {
-                scoreDisp.textContent = Math.floor(distance);
-                speedDisp.textContent = Math.floor(speed);
-            };
+            const loop = (time) => {
+                if(!play) return;
+                score++;
+                if(score%5===0) document.getElementById('mt-score').textContent = Math.floor(score/5);
 
-            const loop = () => {
-                if(!isPlaying) return;
+                const speed = 0.8 + (score * 0.0002);
 
-                // 속도 자연 감속
-                speed = Math.max(0, speed - 1.2);
-                distance += speed * 0.01;
-                lineOffset = (lineOffset + speed * 0.4) % 100;
+                lines.forEach(l => { l.position.z += speed; if(l.position.z > 10) l.position.z -= 120; });
+                lightPoles.forEach(p => { p.position.z += speed; if(p.position.z > 10) p.position.z -= 200; });
 
-                // 도로 애니메이션 원근 착시 효과
-                if (lines) {
-                    lines.style.background = `repeating-linear-gradient(to bottom, #f59e0b, #f59e0b 20px, transparent 20px, transparent 40px)`;
-                    lines.style.backgroundPosition = `0px ${lineOffset}px`;
+                playerMoto.position.x += (targetX - playerMoto.position.x) * 0.2;
+                playerMoto.rotation.z = (targetX - playerMoto.position.x) * -0.15;
+                playerMoto.rotation.y = (playerMoto.position.x - targetX) * 0.05;
+
+                camera.position.x += (playerMoto.position.x * 0.7 - camera.position.x) * 0.1;
+                camera.lookAt(camera.position.x * 0.5, 1, -10);
+
+                if(time - lastT > Math.max(300, 1000 - score*0.1)) {
+                    const obsMesh = new THREE.Group();
+                    const carBody = new THREE.Mesh(new THREE.BoxGeometry(2, 1, 4.5), new THREE.MeshStandardMaterial({color: Math.random()>0.5?0xffffff:0x333333}));
+                    carBody.position.y = 0.5;
+                    const tail = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.2, 0.1), new THREE.MeshBasicMaterial({color:0xff0000}));
+                    tail.position.set(0, 0.5, 2.26);
+                    obsMesh.add(carBody); obsMesh.add(tail);
+
+                    const lanes = [-5, 0, 5];
+                    obsMesh.position.set(lanes[Math.floor(Math.random()*3)], 0, -100);
+                    scene.add(obsMesh);
+                    obstacles.push({mesh: obsMesh, speed: speed * 0.4});
+                    lastT = time;
                 }
 
-                updateUI();
+                let hit = false;
+                const pBox = new THREE.Box3().setFromObject(playerMoto);
+                pBox.expandByScalar(-0.2);
 
-                // 렌덤 장애물 회피 실패 또는 가속을 안 해서 멈췄을 때의 강제 게임 종료 조건
-                if (speed <= 0 && distance > 5) {
-                    endGame();
-                } else {
-                    reqId = requestAnimationFrame(loop);
+                for(let i=obstacles.length-1; i>=0; i--) {
+                    let obs = obstacles[i];
+                    obs.mesh.position.z += (speed - obs.speed);
+
+                    const oBox = new THREE.Box3().setFromObject(obs.mesh);
+                    oBox.expandByScalar(-0.2);
+                    if(pBox.intersectsBox(oBox)) hit = true;
+
+                    if(obs.mesh.position.z > 15) {
+                        scene.remove(obs.mesh); obstacles.splice(i, 1);
+                    }
                 }
+
+                if(hit) {
+                    play=false;
+                    const ov = document.getElementById('mt-ov');
+                    ov.classList.remove('hidden');
+                    document.getElementById('mt-msg').classList.remove('hidden');
+                    document.getElementById('mt-final').innerHTML = `<span class="text-sm block mb-1 text-slate-300">달린 거리</span><span class="text-4xl text-orange-400">${Math.floor(score/5)}m</span>`;
+                    document.getElementById('mt-final').classList.remove('hidden');
+                    document.getElementById('mt-st').textContent = '다시 달리기';
+                }
+
+                renderer.render(scene, camera);
+                if(play) reqId = requestAnimationFrame(loop);
             };
 
-            const endGame = () => {
-                isPlaying = false;
+            document.getElementById('mt-st').addEventListener('click', (e) => { e.stopPropagation(); start(); });
+            const mv = (d) => {
+                if(play) {
+                    let currentLane = Math.round(targetX / 5);
+                    targetX = Math.max(-5, Math.min(5, (currentLane + d) * 5));
+                }
+            };
+            document.getElementById('mt-left').addEventListener('click', () => mv(-1));
+            document.getElementById('mt-right').addEventListener('click', () => mv(1));
+
+            const tmv = (e) => {
+                if(!play) return;
+                const rect = canvasContainer.getBoundingClientRect();
+                const cx = e.touches ? e.touches[0].clientX : e.clientX;
+                const ratio = (cx - rect.left) / rect.width;
+                targetX = Math.max(-5.5, Math.min(5.5, (ratio - 0.5) * 14));
+            };
+            canvasContainer.addEventListener('touchmove', tmv, {passive:true});
+            canvasContainer.addEventListener('mousemove', (e)=>{if(e.buttons===1)tmv(e);});
+
+            const keydown = (e) => {
+                if(!play) return;
+                if(['ArrowLeft','ArrowRight'].includes(e.key)) e.preventDefault();
+                if(e.key === 'ArrowLeft') mv(-1);
+                if(e.key === 'ArrowRight') mv(1);
+            };
+            window.addEventListener('keydown', keydown);
+
+            const resizeObs = new ResizeObserver(() => {
+                if(canvasContainer.clientWidth === 0) return;
+                camera.aspect = canvasContainer.clientWidth / canvasContainer.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(canvasContainer.clientWidth, canvasContainer.clientHeight);
+                renderer.render(scene, camera);
+            });
+            resizeObs.observe(canvasContainer);
+            renderer.render(scene, camera);
+
+            return () => {
                 cancelAnimationFrame(reqId);
-                score = Math.floor(distance);
-                startOverlay.classList.remove('hidden');
-                finalScoreDisp.textContent = `주행 거리: ${score}m`;
-                finalScoreDisp.classList.remove('hidden');
-                startBtn.textContent = '다시 달리기';
-
-                // [순위표 연동] 오토바이 3D 점수 전송
-                if (window.saveGameScore) window.saveGameScore('motorcycle', score);
+                window.removeEventListener('keydown', keydown);
+                resizeObs.disconnect();
+                renderer.dispose();
+                scene.traverse(obj => {
+                    if (obj.geometry) obj.geometry.dispose();
+                    if (obj.material) obj.material.dispose();
+                });
             };
+        };
 
-            accelBtn.addEventListener('mousedown', () => { if(isPlaying) speed = Math.min(299, speed + 14); });
-            accelBtn.addEventListener('touchstart', (e) => { e.preventDefault(); if(isPlaying) speed = Math.min(299, speed + 14); }, {passive:false});
-            startBtn.addEventListener('click', start);
+        const mountFps = (container) => {
+    // 원작자 표시 레이어를 제거하고 iframe만 남김
+    container.innerHTML = `
+        <div style="width: 100%; height: 100%; overflow: hidden;" class="absolute inset-0 bg-black">
+            <iframe
+                src="https://ktxsubway-bit.github.io/hasigamefps"
+                width="100%"
+                height="100%"
+                frameborder="0"
+                allow="autoplay; fullscreen; keyboard"
+                allowfullscreen="true"
+                class="w-full h-full border-0"
+            ></iframe>
+        </div>
+    `;
 
-            return () => { isPlaying = false; cancelAnimationFrame(reqId); };
+    // 타이머와 오버레이 제어 로직이 사라졌으므로 단순 초기화 함수만 반환하거나 생략 가능
+    return () => {
+        container.innerHTML = '';
+    };
+};
+        const mountUfo = (container) => {
+            container.innerHTML = `
+                <div class="flex flex-col items-center w-full h-full pb-4">
+                    <div class="flex justify-between w-full max-w-5xl px-2 mb-3 font-bold text-xl shrink-0">
+                        <span class="text-purple-600 bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 w-full text-center">탕탕 이모지 특공대</span>
+                    </div>
+                    <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
+                        <iframe
+                            src="https://ktxsubway-bit.github.io/hasigameUFO/"
+                            class="absolute inset-0 w-full h-full border-0"
+                            allowfullscreen="true"
+                            scrolling="no"
+                        ></iframe>
+                    </div>
+                </div>
+            `;
+            return () => {};
+        };
+
+        const mountAirstrike = (container) => {
+            container.innerHTML = `
+                <div class="flex flex-col items-center w-full h-full pb-4">
+                    <div class="flex justify-between w-full max-w-5xl px-2 mb-3 font-bold text-xl shrink-0">
+                        <span class="text-zinc-600 bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 w-full text-center">가자! 점자!</span>
+                    </div>
+                    <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
+                        <iframe
+                            src="https://ktxsubway-bit.github.io/hasigameAI/"
+                            class="absolute inset-0 w-full h-full border-0"
+                            allowfullscreen="true"
+                            scrolling="no"
+                        ></iframe>
+                    </div>
+                </div>
+            `;
+            return () => {};
+        };
+
+       
+
+
+        const mountSubwayRun = (container) => {
+            container.innerHTML = `
+                <div class="flex flex-col items-center w-full h-full pb-4">
+                    <div class="flex justify-between w-full max-w-5xl px-2 mb-3 font-bold text-xl shrink-0">
+                        <span class="text-cyan-600 bg-white px-6 py-2 rounded-xl shadow-sm border border-slate-100 w-full text-center">서브웨이 런</span>
+                    </div>
+                    <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
+                        <iframe
+                            src="https://ktxsubway-bit.github.io/hasigamesu/"
+                            class="absolute inset-0 w-full h-full border-0"
+                            allowfullscreen="true"
+                            scrolling="no"
+                        ></iframe>
+                    </div>
+                </div>
+            `;
+            return () => {};
         };
 
         const mountPenaltyKick = (container) => {
-            let score = 0, isPlaying = false, stage = 1;
             container.innerHTML = `
-                <div class="flex flex-col items-center w-full max-w-sm mx-auto touch-none select-none mt-4">
-                    <div class="flex justify-between w-full px-4 mb-4 text-xl font-bold">
-                        <span class="text-indigo-600 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100">골인: <span id="penalty-score">0</span></span>
-                        <span class="text-emerald-500 bg-white px-4 py-2 rounded-xl shadow-sm border border-slate-100">단계: <span id="penalty-stage">1</span></span>
-                    </div>
-                    <div class="relative w-full bg-slate-900 rounded-3xl overflow-hidden border-4 border-slate-800 shadow-2xl flex flex-col items-center justify-end" style="height: 320px; background: linear-gradient(to bottom, #1e3a8a 30%, #065f46 30%);">
-                        <div id="penalty-start-overlay" class="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center z-20 text-white backdrop-blur-sm">
-                            <p class="text-3xl font-black mb-4 text-emerald-400">승부차기 슛!</p>
-                            <p id="penalty-final-score" class="text-lg font-bold mb-6 hidden"></p>
-                            <button id="penalty-start-btn" class="bg-emerald-600 hover:bg-emerald-700 px-8 py-3 rounded-full font-bold text-lg shadow-xl transition-all">경기 시작</button>
+                <style>
+                    .pk-container { position: relative; width: 100%; max-width: 450px; height: 75vh; min-height: 500px; background-color: #4caf50; border: 6px solid #fff; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); overflow: hidden; touch-action: none; user-select: none; }
+                    .pk-canvas { display: block; width: 100%; height: 100%; cursor: pointer; }
+                    .pk-ui-layer { position: absolute; top: 0; left: 0; width: 100%; padding: 15px; box-sizing: border-box; display: flex; justify-content: space-between; pointer-events: none; z-index: 5; }
+                    .pk-stat-box { background-color: rgba(0, 0, 0, 0.6); padding: 8px 15px; border-radius: 20px; font-size: 1.2rem; font-weight: bold; color: #fff; border: 2px solid #fff; box-shadow: 0 4px 0px rgba(0,0,0,0.2); }
+                    .pk-feedback { position: absolute; top: 40%; width: 100%; text-align: center; font-size: 4rem; font-weight: bold; color: #ffeb3b; text-shadow: 3px 3px 0 #d32f2f, -2px -2px 0 #d32f2f, 2px -2px 0 #d32f2f, -2px 2px 0 #d32f2f; pointer-events: none; opacity: 0; transform: scale(0.5); transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 8; }
+                    .pk-feedback.show { opacity: 1; transform: scale(1) translateY(-30px); }
+                    .pk-overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 10; }
+                    .pk-shake { animation: pk-shake 0.3s; }
+                    @keyframes pk-shake {
+                        0% { transform: translate(1px, 1px) rotate(0deg); }
+                        20% { transform: translate(-3px, 0px) rotate(1deg); }
+                        40% { transform: translate(3px, 2px) rotate(0deg); }
+                        60% { transform: translate(-3px, 1px) rotate(0deg); }
+                        80% { transform: translate(-1px, -1px) rotate(1deg); }
+                        100% { transform: translate(1px, -2px) rotate(-1deg); }
+                    }
+                </style>
+                <div class="flex flex-col items-center justify-center w-full h-full pb-4">
+                    <div id="pk-game-container" class="pk-container">
+                        <canvas id="pk-canvas" width="450" height="700" class="pk-canvas"></canvas>
+                        <div class="pk-ui-layer">
+                            <div class="pk-stat-box">GOALS: <span id="pk-score">0</span></div>
+                            <div class="pk-stat-box tracking-widest" id="pk-lives">⚽⚽⚽</div>
                         </div>
-                        
-                        <!-- 축구 골대 및 골키퍼 -->
-                        <div class="absolute top-[10%] w-[180px] h-[70px] border-4 border-b-0 border-white flex justify-center relative">
-                            <div id="keeper-sprite" class="absolute bottom-0 text-4xl transition-all duration-300" style="left: 40%;">🧤</div>
+                        <div id="pk-feedback" class="pk-feedback">GOAL!</div>
+                        <div id="pk-start-screen" class="pk-overlay">
+                            <h1 class="text-white text-5xl mb-4 font-black text-center" style="text-shadow: 3px 3px 0px #2e7d32; line-height:1.2;">⚽ 승부차기<br>마스터</h1>
+                            <p class="text-gray-300 text-center mb-8 text-lg font-medium">공(⚽)을 터치하고 <span class="text-yellow-400 font-bold">뒤로 드래그</span>하세요!<br>당긴 방향과 힘에 따라 공이 날아갑니다.<br><br>움직이는 골키퍼(🧤)를 피해<br>골망을 흔드세요!</p>
+                            <button id="pk-start-btn" class="px-10 py-4 text-2xl font-black bg-yellow-400 text-gray-900 rounded-full shadow-[0_6px_0px_#f57f17] active:translate-y-[6px] active:shadow-none transition-all">킥 오프!</button>
                         </div>
-
-                        <!-- 슛 방향 버튼들 -->
-                        <div class="grid grid-cols-3 gap-3 w-full px-6 mb-16 z-10">
-                            <button data-dir="left" class="shoot-btn bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl border border-white/20 font-bold active:scale-95 transition-all">◀ 왼쪽 슛</button>
-                            <button data-dir="center" class="shoot-btn bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl border border-white/20 font-bold active:scale-95 transition-all">▲ 중앙 슛</button>
-                            <button data-dir="right" class="shoot-btn bg-white/10 hover:bg-white/20 text-white py-3 rounded-xl border border-white/20 font-bold active:scale-95 transition-all">오른쪽 ▶</button>
+                        <div id="pk-game-over-screen" class="pk-overlay !hidden">
+                            <h1 class="text-red-500 text-5xl mb-4 font-black">게임 오버 💥</h1>
+                            <p class="text-gray-300 text-lg mb-6">공을 3번 놓쳤습니다...</p>
+                            <h2 class="text-yellow-400 text-3xl font-black mb-8">총 득점: <span id="pk-final-score">0</span> 골</h2>
+                            <button id="pk-restart-btn" class="px-10 py-4 text-2xl font-black bg-yellow-400 text-gray-900 rounded-full shadow-[0_6px_0px_#f57f17] active:translate-y-[6px] active:shadow-none transition-all">다시 차기</button>
                         </div>
-
-                        <!-- 축구공 -->
-                        <div id="soccer-ball" class="absolute bottom-4 text-4xl transition-all duration-500 transform" style="left: 45%;">⚽</div>
                     </div>
                 </div>
             `;
 
-            const scoreDisp = document.getElementById('penalty-score');
-            const stageDisp = document.getElementById('penalty-stage');
-            const startOverlay = document.getElementById('penalty-start-overlay');
-            const finalScoreDisp = document.getElementById('penalty-final-score');
-            const startBtn = document.getElementById('penalty-start-btn');
-            const keeper = document.getElementById('keeper-sprite');
-            const ball = document.getElementById('soccer-ball');
+            const canvas = container.querySelector('#pk-canvas');
+            const ctx = canvas.getContext('2d');
+            const scoreDisplay = container.querySelector('#pk-score');
+            const livesDisplay = container.querySelector('#pk-lives');
+            const feedbackMsg = container.querySelector('#pk-feedback');
+            const gameContainer = container.querySelector('#pk-game-container');
+           
+            const startScreen = container.querySelector('#pk-start-screen');
+            const gameOverScreen = container.querySelector('#pk-game-over-screen');
+            const finalScoreDisplay = container.querySelector('#pk-final-score');
+           
+            const startBtn = container.querySelector('#pk-start-btn');
+            const restartBtn = container.querySelector('#pk-restart-btn');
 
-            const start = () => {
-                score = 0; stage = 1; isPlaying = true;
-                startOverlay.classList.add('hidden');
-                updateUI();
-                resetBall();
+            const CANVAS_WIDTH = 450;
+            const CANVAS_HEIGHT = 700;
+
+            let isGameRunning = false;
+            let animationId;
+            let lastTime = 0;
+
+            let score = 0;
+            let lives = 3;
+            let gameSpeed = 1;
+
+            const goal = { x: 75, y: 80, width: 300, height: 100, postRadius: 8 };
+            const keeper = { x: CANVAS_WIDTH / 2, y: goal.y + goal.height - 20, width: 80, height: 30, speed: 150, direction: 1, emoji: '🧤' };
+            const ballStartPos = { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT - 120 };
+            const ball = { x: ballStartPos.x, y: ballStartPos.y, vx: 0, vy: 0, radius: 20, baseRadius: 20, emoji: '⚽', rotation: 0, state: 'idle' };
+
+            let dragInfo = { startX: 0, startY: 0, currentX: 0, currentY: 0 };
+            let particles = [];
+
+            const getCanvasPos = (e) => {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: (clientX - rect.left) * (canvas.width / rect.width),
+                    y: (clientY - rect.top) * (canvas.height / rect.height)
+                };
             };
 
-            const updateUI = () => {
-                scoreDisp.textContent = score;
-                stageDisp.textContent = stage;
-            };
-
-            const resetBall = () => {
-                ball.style.left = '45%';
-                ball.style.bottom = '16px';
-                ball.style.transform = 'scale(1)';
-                keeper.style.left = '40%';
-            };
-
-            const shoot = (dir) => {
-                if(!isPlaying) return;
-
-                // 키퍼가 막는 방향 랜덤 결정 (좌, 중, 우)
-                const dirs = ['left', 'center', 'right'];
-                const keeperDir = dirs[Math.floor(Math.random() * 3)];
-
-                // 키퍼 그래픽 이동
-                if (keeperDir === 'left') keeper.style.left = '10%';
-                else if (keeperDir === 'center') keeper.style.left = '40%';
-                else keeper.style.left = '75%';
-
-                // 공 그래픽 이동
-                if (dir === 'left') {
-                    ball.style.left = '15%';
-                    ball.style.bottom = '65%';
-                } else if (dir === 'center') {
-                    ball.style.left = '45%';
-                    ball.style.bottom = '65%';
-                } else {
-                    ball.style.left = '75%';
-                    ball.style.bottom = '65%';
+            const handleStart = (e) => {
+                if (!isGameRunning || ball.state !== 'idle') return;
+                const pos = getCanvasPos(e);
+                const dist = Math.hypot(pos.x - ball.x, pos.y - ball.y);
+                if (dist < ball.radius * 3) {
+                    ball.state = 'dragging';
+                    dragInfo.startX = ball.x; dragInfo.startY = ball.y;
+                    dragInfo.currentX = pos.x; dragInfo.currentY = pos.y;
                 }
-                ball.style.transform = 'scale(0.5) rotate(360deg)';
-
-                setTimeout(() => {
-                    if (dir === keeperDir) {
-                        // 막힘 - 게임 오버
-                        isPlaying = false;
-                        startOverlay.classList.remove('hidden');
-                        finalScoreDisp.textContent = `최종 골: ${score}골`;
-                        finalScoreDisp.classList.remove('hidden');
-                        startBtn.textContent = '다시 도전';
-
-                        // [순위표 연동] 승부차기 점수 전송
-                        if (window.saveGameScore) window.saveGameScore('penalty', score);
-                    } else {
-                        // 골인!
-                        score++;
-                        stage = Math.floor(score / 3) + 1;
-                        window.showAlert('⚽ GOAL!!! 골인에 성공했습니다!');
-                        updateUI();
-                        setTimeout(resetBall, 1000);
-                    }
-                }, 600);
             };
 
-            container.querySelectorAll('.shoot-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    shoot(e.target.dataset.dir);
-                });
-            });
+            const handleMove = (e) => {
+                if (ball.state !== 'dragging') return;
+                if (e.cancelable) e.preventDefault();
+                const pos = getCanvasPos(e);
+                dragInfo.currentX = pos.x; dragInfo.currentY = pos.y;
+            };
 
-            startBtn.addEventListener('click', start);
+            const handleEnd = () => {
+                if (ball.state === 'dragging') {
+                    const dx = dragInfo.startX - dragInfo.currentX;
+                    const dy = dragInfo.startY - dragInfo.currentY;
+                   
+                    if (dy <= 10) {
+                        ball.state = 'idle';
+                        return;
+                    }
 
-            return () => { isPlaying = false; };
+                    const power = Math.min(Math.hypot(dx, dy) * 3, 1200);
+                    const angle = Math.atan2(dy, dx);
+
+                    ball.vx = Math.cos(angle) * power;
+                    ball.vy = Math.sin(angle) * power;
+                    ball.state = 'shooting';
+                }
+            };
+
+            canvas.addEventListener('mousedown', handleStart);
+            canvas.addEventListener('mousemove', handleMove);
+            const winMouseUp = () => handleEnd();
+            window.addEventListener('mouseup', winMouseUp);
+
+            canvas.addEventListener('touchstart', handleStart, { passive: false });
+            canvas.addEventListener('touchmove', handleMove, { passive: false });
+            const winTouchEnd = () => handleEnd();
+            window.addEventListener('touchend', winTouchEnd);
+
+            function createParticles(x, y, emoji, count) {
+                for (let i = 0; i < count; i++) {
+                    particles.push({
+                        x: x, y: y,
+                        vx: (Math.random() - 0.5) * 400,
+                        vy: (Math.random() - 0.5) * 400 - 200,
+                        life: 0.5 + Math.random() * 0.5,
+                        emoji: emoji,
+                        size: 15 + Math.random() * 15,
+                        gravity: 800
+                    });
+                }
+            }
+
+            function showFeedback(text, color) {
+                feedbackMsg.innerText = text;
+                feedbackMsg.style.color = color;
+                feedbackMsg.classList.add('show');
+                setTimeout(() => { feedbackMsg.classList.remove('show'); }, 1000);
+            }
+
+            function resetRound() {
+                ball.x = ballStartPos.x; ball.y = ballStartPos.y;
+                ball.vx = 0; ball.vy = 0;
+                ball.radius = ball.baseRadius; ball.rotation = 0; ball.state = 'idle';
+            }
+
+            function handleGoal() {
+                ball.state = 'done';
+                score++;
+                gameSpeed = 1 + (score * 0.1);
+                showFeedback("GOAL!", "#ffeb3b");
+                createParticles(goal.x + goal.width/2, goal.y + goal.height/2, '🎉', 20);
+                createParticles(goal.x + goal.width/2, goal.y + goal.height/2, '⭐', 10);
+                updateUI();
+                setTimeout(resetRound, 1500);
+            }
+
+            function handleMiss(reason) {
+                ball.state = 'done';
+                lives--;
+                if (reason === 'blocked') {
+                    showFeedback("BLOCKED!", "#ff5252");
+                    createParticles(ball.x, ball.y, '💨', 10);
+                } else {
+                    showFeedback("MISS...", "#9e9e9e");
+                }
+                gameContainer.classList.remove('pk-shake');
+                void gameContainer.offsetWidth;
+                gameContainer.classList.add('pk-shake');
+                updateUI();
+                if (lives <= 0) setTimeout(gameOver, 1500);
+                else setTimeout(resetRound, 1500);
+            }
+
+            function initGame() {
+                score = 0; lives = 3; gameSpeed = 1;
+                keeper.x = CANVAS_WIDTH / 2; keeper.speed = 150;
+                particles = [];
+                resetRound(); updateUI();
+                startScreen.classList.add('!hidden');
+                gameOverScreen.classList.add('!hidden');
+                isGameRunning = true; lastTime = performance.now();
+                animationId = requestAnimationFrame(gameLoop);
+            }
+
+            function updateUI() {
+                scoreDisplay.innerText = score;
+                livesDisplay.innerText = '⚽'.repeat(Math.max(0, lives)) + '❌'.repeat(Math.max(0, 3 - lives));
+            }
+
+            function gameOver() {
+                isGameRunning = false;
+                finalScoreDisplay.innerText = score;
+                gameOverScreen.classList.remove('!hidden');
+            }
+
+            function circleRectCollide(cx, cy, r, rx, ry, rw, rh) {
+                let testX = cx; let testY = cy;
+                if (cx < rx) testX = rx; else if (cx > rx + rw) testX = rx + rw;
+                if (cy < ry) testY = ry; else if (cy > ry + rh) testY = ry + rh;
+                let distX = cx - testX; let distY = cy - testY;
+                let distance = Math.sqrt((distX*distX) + (distY*distY));
+                return distance <= r;
+            }
+
+            function update(deltaTime) {
+                let currentKeeperSpeed = keeper.speed * gameSpeed;
+                keeper.x += currentKeeperSpeed * keeper.direction * deltaTime;
+
+                if (keeper.x - keeper.width/2 < goal.x - 20) {
+                    keeper.x = goal.x - 20 + keeper.width/2; keeper.direction = 1;
+                } else if (keeper.x + keeper.width/2 > goal.x + goal.width + 20) {
+                    keeper.x = goal.x + goal.width + 20 - keeper.width/2; keeper.direction = -1;
+                }
+
+                if (ball.state === 'shooting') {
+                    ball.x += ball.vx * deltaTime;
+                    ball.y -= ball.vy * deltaTime;
+                    ball.rotation += (Math.sqrt(ball.vx*ball.vx + ball.vy*ball.vy)) * deltaTime * 0.05;
+
+                    let depthRatio = Math.max(0.5, (ball.y - goal.y) / (ballStartPos.y - goal.y));
+                    ball.radius = ball.baseRadius * (0.6 + 0.4 * depthRatio);
+
+                    ball.vx *= 0.98; ball.vy *= 0.98;
+
+                    if (ball.y < goal.y + goal.height + 20 && ball.y > goal.y - 20) {
+                        if (circleRectCollide(ball.x, ball.y, ball.radius, keeper.x - keeper.width/2, keeper.y - keeper.height/2, keeper.width, keeper.height)) {
+                            ball.vy = -ball.vy * 0.5; ball.vx = ball.vx * 0.5;
+                            handleMiss('blocked');
+                        }
+                    }
+
+                    if (ball.state === 'shooting' && ball.y < goal.y + goal.height - 10) {
+                        let hitLeftPost = circleRectCollide(ball.x, ball.y, ball.radius, goal.x-4, goal.y, 8, goal.height);
+                        let hitRightPost = circleRectCollide(ball.x, ball.y, ball.radius, goal.x+goal.width-4, goal.y, 8, goal.height);
+
+                        if (hitLeftPost || hitRightPost) {
+                            ball.vx = hitLeftPost ? Math.abs(ball.vx) * 0.8 : -Math.abs(ball.vx) * 0.8;
+                            ball.vy = -ball.vy * 0.5;
+                            handleMiss('miss');
+                        } else if (ball.x > goal.x && ball.x < goal.x + goal.width) {
+                            ball.vy *= 0.2; ball.vx *= 0.2;
+                            handleGoal();
+                        } else if (ball.y < goal.y) {
+                            handleMiss('miss');
+                        }
+                    }
+
+                    if (ball.state === 'shooting' && (ball.x < 0 || ball.x > CANVAS_WIDTH || ball.y < -50)) {
+                        handleMiss('miss');
+                    }
+                }
+
+                for (let i = particles.length - 1; i >= 0; i--) {
+                    let p = particles[i];
+                    p.x += p.vx * deltaTime; p.y += p.vy * deltaTime;
+                    p.vy += p.gravity * deltaTime; p.life -= deltaTime;
+                    if (p.life <= 0) particles.splice(i, 1);
+                }
+            }
+
+            function draw() {
+                ctx.fillStyle = '#4caf50'; ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+                ctx.fillStyle = '#43a047';
+                for (let i = 0; i < CANVAS_HEIGHT; i += 60) ctx.fillRect(0, i, CANVAS_WIDTH, 30);
+
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)'; ctx.lineWidth = 4;
+                ctx.strokeRect(goal.x - 30, goal.y + goal.height, goal.width + 60, 150);
+               
+                ctx.beginPath(); ctx.arc(CANVAS_WIDTH / 2, goal.y + goal.height + 150, 60, 0, Math.PI, false); ctx.stroke();
+
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)'; ctx.beginPath();
+                ctx.arc(ballStartPos.x, ballStartPos.y, 6, 0, Math.PI * 2); ctx.fill();
+
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)'; ctx.lineWidth = 1; ctx.beginPath();
+                for (let i = goal.x; i <= goal.x + goal.width; i += 15) { ctx.moveTo(i, goal.y); ctx.lineTo(i, goal.y + goal.height); }
+                for (let i = goal.y; i <= goal.y + goal.height; i += 15) { ctx.moveTo(goal.x, i); ctx.lineTo(goal.x + goal.width, i); }
+                ctx.stroke();
+
+                ctx.strokeStyle = '#fff'; ctx.lineWidth = 8; ctx.lineJoin = 'round'; ctx.beginPath();
+                ctx.moveTo(goal.x, goal.y + goal.height); ctx.lineTo(goal.x, goal.y);
+                ctx.lineTo(goal.x + goal.width, goal.y); ctx.lineTo(goal.x + goal.width, goal.y + goal.height); ctx.stroke();
+
+                ctx.font = '50px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.save(); ctx.translate(keeper.x, keeper.y); ctx.rotate(keeper.direction * 0.15);
+                ctx.fillText(keeper.emoji, 0, 0); ctx.restore();
+
+                if (ball.state === 'dragging') {
+                    const dx = dragInfo.startX - dragInfo.currentX; const dy = dragInfo.startY - dragInfo.currentY;
+                    if (dy > 0) {
+                        ctx.strokeStyle = 'rgba(255, 235, 59, 0.5)'; ctx.lineWidth = 4; ctx.setLineDash([10, 10]); ctx.beginPath();
+                        ctx.moveTo(ball.x, ball.y); ctx.lineTo(ball.x + dx * 2, ball.y - dy * 2); ctx.stroke(); ctx.setLineDash([]);
+                    }
+                }
+
+                for (let p of particles) {
+                    ctx.globalAlpha = Math.max(0, p.life * 2); ctx.font = `${p.size}px Arial`; ctx.fillText(p.emoji, p.x, p.y);
+                }
+                ctx.globalAlpha = 1.0;
+
+                ctx.save(); ctx.translate(ball.x, ball.y); ctx.rotate(ball.rotation);
+                if (ball.state === 'shooting') {
+                    ctx.fillStyle = 'rgba(0,0,0,0.3)'; let shadowOffset = (ball.baseRadius - ball.radius) * 2;
+                    ctx.beginPath(); ctx.arc(0, shadowOffset, ball.radius, 0, Math.PI*2); ctx.fill();
+                }
+                ctx.font = `${ball.radius * 2}px Arial`; ctx.fillText(ball.emoji, 0, 0); ctx.restore();
+            }
+
+            function gameLoop(currentTime) {
+                if (!isGameRunning) return;
+                const deltaTime = (currentTime - lastTime) / 1000;
+                lastTime = currentTime;
+                if (deltaTime < 0.2) { update(deltaTime); draw(); }
+                if (isGameRunning) animationId = requestAnimationFrame(gameLoop);
+            }
+
+            startBtn.addEventListener('click', initGame);
+            restartBtn.addEventListener('click', initGame);
+            draw();
+
+            return () => {
+                isGameRunning = false;
+                cancelAnimationFrame(animationId);
+                window.removeEventListener('mouseup', winMouseUp);
+                window.removeEventListener('touchend', winTouchEnd);
+            };
         };
 
-        const GAMES_LIST = [
-            { id: 'gather', title: '먹이 줍기', icon: 'apple', color: 'bg-emerald-100 text-emerald-600', mount: mountGather },
-            { id: 'fruit', title: '과일 받기', icon: 'grape', color: 'bg-sky-100 text-sky-600', mount: mountFruit },
-            { id: 'whack', title: '두더지 잡기', icon: 'hammer', color: 'bg-amber-100 text-amber-700', mount: mountWhack },
-            { id: 'math', title: '산수 퀴즈', icon: 'binary', color: 'bg-blue-100 text-blue-600', mount: mountMath },
-            { id: 'clicker', title: '10초 광클', icon: 'mouse-pointer-click', color: 'bg-purple-100 text-purple-600', mount: mountClicker },
-            { id: 'tetris', title: '테트리스', icon: 'grid', color: 'bg-slate-200 text-slate-800', mount: mountTetris },
-            { id: 'color', title: '색깔 찾기', icon: 'palette', color: 'bg-indigo-100 text-indigo-600', mount: mountColor },
-            { id: 'simon', title: '패턴 기억', icon: 'brain', color: 'bg-rose-100 text-rose-600', mount: mountSimon },
-            { id: 'bomb', title: '폭탄 피하기', icon: 'bomb', color: 'bg-rose-100 text-rose-700', mount: mountBomb },
-            { id: 'typing', title: '단어 타자', icon: 'keyboard', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountTyping },
-            { id: 'snake', title: '스네이크', icon: 'activity', color: 'bg-emerald-100 text-emerald-700', mount: mountSnake },
-            { id: '2048', title: '2048', icon: 'combine', color: 'bg-amber-100 text-amber-600', mount: mount2048 },
-            { id: 'breakout', title: '벽돌 깨기', icon: 'blocks', color: 'bg-rose-100 text-rose-500', mount: mountBreakout },
-            { id: 'timing', title: '타이밍 맞추기', icon: 'gauge', color: 'bg-violet-100 text-violet-600', mount: mountTiming },
-            { id: 'motorcycle', title: '오토바이 3D', icon: 'bike', color: 'bg-orange-100 text-orange-600', mount: mountMotorcycle },
-            { id: 'penalty', title: '승부차기', icon: 'trophy', color: 'bg-teal-100 text-teal-600', mount: mountPenaltyKick },
-            { id: 'rps', title: '가위바위보', icon: 'swords', color: 'bg-slate-100 text-slate-600', mount: mountRps },
-            { id: 'baseball', title: '숫자 야구', icon: 'target', color: 'bg-sky-100 text-sky-500', mount: mountBaseball },
-            { id: 'ttt', title: '틱택토', icon: 'grid', color: 'bg-slate-100 text-slate-500', mount: mountTicTacToe },
-            { id: 'memory', title: '카드 맞추기', icon: 'sparkles', color: 'bg-indigo-100 text-indigo-500', mount: mountMemory },
-            { id: 'reaction', title: '반응속도', icon: 'zap', color: 'bg-rose-100 text-rose-500', mount: mountReaction },
-            { id: 'bus', title: '백룸 3D', icon: 'compass', color: 'bg-yellow-100 text-yellow-700', mount: mountBus },
-            { id: 'jump3d', title: '3D 점프맵', icon: 'box', color: 'bg-teal-100 text-teal-600', mount: mount3DJumpMap },
-            { id: 'bikejump', title: '자전거 시뮬레이터', icon: 'navigation', color: 'bg-sky-100 text-sky-600', mount: mountBikeJump }
-        ];
-
-        // 대시보드 카드 생성 및 마운트 처리
-        const gridContainer = document.getElementById('games-grid');
-        gridContainer.innerHTML = GAMES_LIST.map(g => `
-            <div onclick="playGame('${g.id}')" class="bg-white p-6 rounded-[2rem] border border-slate-100 shadow-sm hover:shadow-xl hover:border-indigo-100 cursor-pointer transition-all duration-300 transform hover:-translate-y-1.5 flex flex-col items-center text-center">
-                <span class="p-4 rounded-3xl mb-4 ${g.color}"><i data-lucide="${g.icon}" class="w-8 h-8"></i></span>
-                <span class="font-black text-slate-800 text-lg tracking-tight">${g.title}</span>
+/**
+ * Gemini 3 Flash Preview 기반 대화 게임
+ */
+const mountgemini = (bellContainer) => {
+    bellContainer.innerHTML = `
+            <div class="relative w-full max-w-5xl flex-1 rounded-2xl overflow-hidden border-4 border-slate-700 shadow-2xl bg-black">
+                <iframe
+                    src="https://ktxsubway-bit.github.io/kgamegemini"
+                    class="absolute inset-0 w-full h-full border-0"
+                    allowfullscreen="true"
+                    scrolling="no"
+                    allow="autoplay; fullscreen; keyboard"
+                ></iframe>
             </div>
-        `).join('');
-        lucide.createIcons();
+        </div>
+    `;
 
-        window.playGame = (id) => {
-            const game = GAMES_LIST.find(g => g.id === id);
+    return () => {
+        container.innerHTML = '';
+    };
+};
+       
+
+const mountGun = (container) => {
+    container.innerHTML = `
+        <div class="relative w-full h-[calc(100vh-100px)] rounded-2xl overflow-hidden border-4 border-slate-700 bg-black shadow-2xl">
+            <iframe src="https://deadshot.io/" class="absolute inset-0 w-full h-full border-0" allow="autoplay; gamepad; fullscreen"></iframe>
+           
+            <div id="deadshot-notice" class="absolute top-4 left-4 z-50 bg-slate-900/90 text-white p-4 rounded-xl shadow-xl backdrop-blur-sm transition-all duration-500 border border-slate-700/50 max-w-xs">
+                <p class="text-xs text-slate-400 mb-1">안내 (5초 후 사라집니다)</p>
+                <p class="text-sm font-medium mb-2 text-slate-200">
+                    해당 게임의 저작권은 <span class="text-teal-400 font-bold">Mathew Matakovic</span>에게 있습니다.
+                </p>
+                <a href="https://deadshot.io/" target="_blank" class="inline-flex items-center text-xs text-teal-400 hover:text-teal-300 underline font-semibold">
+                    데드샷IO 링크 바로가기 ↗
+                </a>
+            </div>
+        </div>
+    `;
+
+    // 🕒 5초 뒤에 안내문 박스를 화면에서 숨기는 기능
+    const timerId = setTimeout(() => {
+        const notice = document.getElementById('deadshot-notice');
+        if (notice) {
+            // 서서히 투명해지면서 사라지도록 스타일 처리
+            notice.style.opacity = '0';
+            notice.style.transform = 'translateY(-10px)';
+            // 애니메이션이 끝난 후 완전히 숨김
+            setTimeout(() => notice.classList.add('hidden'), 500);
+        }
+    }, 5000);
+
+    // 다른 게임으로 나갈 때 타이머 잔재를 깨끗이 청소(클린업)해 줍니다.
+    return () => {
+        clearTimeout(timerId);
+    };
+};
+
+
+
+const mountMineFun = (mineFunContainer) => {
+    // 대문자 C로 정확하게 일치시킴!
+    mineFunContainer.innerHTML = `
+        <div class="relative w-full h-[calc(100vh-100px)] rounded-2xl overflow-hidden border-4 border-slate-700 bg-black shadow-2xl">
+            <iframe src="https://minefun.io/" class="absolute inset-0 w-full h-full border-0" allow="autoplay; gamepad; fullscreen" allowfullscreen></iframe>
+           
+            <div id="minefun-notice" class="absolute top-4 left-4 z-50 bg-slate-900/90 text-white p-4 rounded-xl shadow-xl backdrop-blur-sm transition-all duration-500 border border-slate-700/50 max-w-xs">
+                <p class="text-xs text-slate-400 mb-1">안내 (5초 후 사라집니다)</p>
+                <p class="text-sm font-medium mb-2 text-slate-200">
+                    해당 게임의 저작권은 <span class="text-teal-400 font-bold">Vectaria</span>에게 있습니다.
+                </p>
+                <a href="https://minefun.io/" target="_blank" class="inline-flex items-center text-xs text-teal-400 hover:text-teal-300 underline font-semibold">
+                    마인펀IO 링크 바로가기 ↗
+                </a>
+            </div>
+        </div>
+    `;
+
+    setTimeout(() => {
+        const notice = document.getElementById('minefun-notice');
+        if (notice) {
+            notice.style.opacity = '0';
+            notice.style.transform = 'translateY(-10px)';
+           
+            setTimeout(() => {
+                notice.remove();
+            }, 500);
+        }
+    }, 5000);
+};
+
+
+
+const mountChess = (chessGameContainer) => {
+    chessGameContainer.innerHTML = `
+        <div class="relative w-full h-[calc(100vh-100px)] rounded-2xl overflow-hidden border-4 border-slate-700 bg-black shadow-2xl">
+            <iframe src="https://ktxsubway-bit.github.io/kGAMEs/" class="absolute inset-0 w-full h-full border-0" allow="autoplay; gamepad; fullscreen" allowfullscreen></iframe>
+        </div>
+    `;
+};        
+
+const mountChats = (chatContainer) => {
+    chatContainer.innerHTML = `
+        <div class="relative w-full h-[calc(100vh-100px)] rounded-2xl overflow-hidden border-4 border-slate-700 bg-black shadow-2xl">
+            <iframe src="https://ktxsubway-bit.github.io/key/" class="absolute inset-0 w-full h-full border-0" allow="autoplay; gamepad; fullscreen" allowfullscreen></iframe>
+        </div>
+    `;
+};
+
+        // ==========================================
+        // 메인 데이터 & 라우팅 (전체 28개 게임 - 한글/영어/숫자순 정렬)
+        // ==========================================
+        const GAMES = [
+  // 1. 한글 (가나다순)
+  { id: 'rps',        title: '가위바위보',           icon: 'scissors',            color: 'bg-rose-100 text-rose-600',     mount: mountRps },
+  // { id: 'airstrike',  title: '가자! 점자!',          icon: 'pen',           color: 'bg-zinc-100 text-zinc-600',     mount: mountAirstrike },
+  { id: 'fruit',      title: '과일 받기',           icon: 'apple',                color: 'bg-emerald-100 text-emerald-600', mount: mountFruit },
+  { id: 'fps',        title: '김밥천국 타이쿤',     icon: 'box',                color: 'bg-red-100 text-red-600',       mount: mountFps },
+  { id: 'typing',     title: '단어 타자',           icon: 'keyboard',            color: 'bg-indigo-100 text-indigo-600', mount: mountTyping },
+  { id: 'whack',      title: '두더지 잡기',         icon: 'gamepad-2',           color: 'bg-amber-100 text-amber-700',   mount: mountWhack },
+  { id: 'gather',     title: '먹이 줍기',           icon: 'target',              color: 'bg-teal-100 text-teal-600',     mount: mountGather },
+  { id: 'reaction',   title: '반응속도',             icon: 'zap',                  color: 'bg-rose-100 text-rose-600',     mount: mountReaction },
+  { id: 'breakout',   title: '벽돌 깨기',           icon: 'layout-template',     color: 'bg-rose-100 text-rose-700',     mount: mountBreakout },
+  { id: 'math',       title: '산수 퀴즈',           icon: 'calculator',          color: 'bg-cyan-100 text-cyan-600',     mount: mountMath },
+  { id: 'color',      title: '색깔 찾기',           icon: 'palette',              color: 'bg-pink-100 text-pink-600',     mount: mountColor },
+  { id: 'subway',     title: '서브웨이 런',         icon: 'train',                color: 'bg-cyan-100 text-cyan-600',     mount: mountSubwayRun },
+  { id: 'baseball',   title: '숫자 야구',           icon: 'trophy',              color: 'bg-orange-100 text-orange-600', mount: mountBaseball },
+  // { id: 'snake',      title: '스네이크(NPC)',       icon: 'bug',                  color: 'bg-lime-100 text-lime-700',     mount: mountSnake },
+  { id: 'penalty',    title: '승부차기',             icon: 'flag',                 color: 'bg-green-100 text-green-700',   mount: mountPenaltyKick },
+  { id: 'motorcycle', title: '오토바이 3D',         icon: 'gauge',                color: 'bg-orange-100 text-orange-700', mount: mountMotorcycle },
+  // { id: 'fps',        title: '김밥천국 시뮬레이터',     icon: 'rice',                color: 'bg-red-100 text-red-600',       mount: mountFps },
+  { id: 'memory',     title: '카드 맞추기',         icon: 'brain-circuit',        color: 'bg-purple-100 text-purple-600', mount: mountMemory },
+  { id: 'chatContainer',     title: '커뮤니티',         icon: 'box',        color: 'bg-purple-100 text-purple-600', mount: mountChats },          
+  { id: 'timing',     title: '타이밍 맞추기',       icon: 'crosshair',            color: 'bg-indigo-100 text-indigo-700', mount: mountTiming },
+  { id: 'ufo',        title: '탕탕 이모지 특공대',   icon: 'rocket',              color: 'bg-purple-100 text-purple-600', mount: mountUfo },
+  { id: 'tetris',     title: '테트리스',             icon: 'blocks',              color: 'bg-indigo-100 text-indigo-600', mount: mountTetris },
+  { id: 'tictactoe',  title: '틱택토',               icon: 'grid-3x3',            color: 'bg-blue-100 text-blue-600',     mount: mountTicTacToe },
+  { id: 'simon',      title: '패턴 기억',           icon: 'list-ordered',        color: 'bg-violet-100 text-violet-600', mount: mountSimon },
+  { id: 'bomb',       title: '폭탄 피하기',         icon: 'bomb',                 color: 'bg-slate-200 text-slate-700',   mount: mountBomb },
+  { id: 'fixie',      title: '픽시 자전거',     icon: 'bike',                 color: 'bg-sky-100 text-sky-600',       mount: mountBikeJump },
+
+  // 2. 영어 (알파벳순)      
+  // { id: 'bellContainer',     title: 'BELLRUN!',          icon: 'bell',   color: 'bg-teal-100 text-teal-600',      mount: mountgemini },
+  { id: 'container',     title: 'DEADSHOT',           icon: 'crosshair',      color: 'bg-teal-100 text-teal-600',      mount: mountGun },
+  { id: 'chessGameContainer',     title: 'Chess',           icon: 'chess-pawn',      color: 'bg-teal-100 text-teal-600',      mount: mountChess },          
+  { id: 'mineFunContainer',     title: 'MineFun.IO',           icon: 'person-standing',      color: 'bg-teal-100 text-teal-600',      mount: mountMineFun },          
+  // 3. 숫자 (오름차순)
+  { id: 'clicker',    title: '10초 광클',           icon: 'mouse-pointer-click', color: 'bg-fuchsia-100 text-fuchsia-600', mount: mountClicker },
+  { id: '2048',       title: '2048',               icon: 'layout-grid',          color: 'bg-amber-100 text-amber-800',    mount: mount2048 },
+  { id: 'jump3d',     title: '3D 점프맵',           icon: 'person-standing',      color: 'bg-teal-100 text-teal-600',      mount: mount3DJumpMap },          
+];
+
+
+        // 게임 메뉴 렌더링
+        const gridContainer = document.getElementById('games-grid');
+        if (gridContainer) {
+            GAMES.forEach(game => {
+                const btn = document.createElement('button');
+                btn.className = "bg-white p-6 rounded-3xl shadow-sm border border-slate-100 flex flex-col items-center justify-center transition-all hover:shadow-xl hover:-translate-y-1 group active:scale-95";
+                btn.onclick = () => window.openGame(game.id);
+                btn.innerHTML = `
+                    <div class="p-4 rounded-2xl mb-4 ${game.color} group-hover:scale-110 transition-transform">
+                        <i data-lucide="${game.icon}" class="w-9 h-9"></i>
+                    </div>
+                    <h3 class="font-bold text-slate-800 text-lg">${game.title}</h3>
+                `;
+                gridContainer.appendChild(btn);
+            });
+            lucide.createIcons();
+        }
+
+        window.openGame = (id) => {
+            const game = GAMES.find(g => g.id === id);
             if(!game) return;
+           
             document.getElementById('menu-screen').classList.add('hidden');
             document.getElementById('game-screen').classList.remove('hidden');
            
@@ -2888,7 +3166,7 @@
             container.innerHTML = '';
            
             // 전체 꽉 찬 화면이 필요한 게임 처리 (패딩 제거)
-            if(id === 'jump3d' || id === 'bus' || id === 'bikejump') {
+            if(id === 'jump3d' || id === 'fps' || id === 'container') {
                 container.classList.remove('p-4');
                 container.classList.add('p-0');
             } else {
