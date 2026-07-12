@@ -104,132 +104,35 @@
 <!-- 1. HTML: 관리자 기능 활성화 버튼 및 로그인 모달 -->
 <!-- ========================================== -->
 
-<!-- 공지 수정 버튼 (평소엔 hidden 처리) -->
-<button id="admin-edit-btn" onclick="window.openAdminEdit()" class="hidden ml-4 shrink-0 bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold hover:bg-indigo-700 transition shadow-md whitespace-nowrap">공지 수정</button>
-
 <!-- 관리자 로그인 모달 창 -->
-<div id="admin-login-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden">
-    <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-4 transform transition-all">
-        <h2 class="text-2xl font-black mb-4 text-slate-800 flex items-center">
-            <i data-lucide="lock" class="mr-2 text-indigo-600"></i> 관리자 로그인
-        </h2>
-        <input type="password" id="admin-pw" class="w-full border-2 border-slate-200 rounded-xl p-4 mb-2 focus:outline-none focus:border-indigo-500 font-mono text-lg" placeholder="비밀번호 입력">
-        <p id="admin-error" class="text-rose-500 text-sm mb-4 font-bold hidden">비밀번호가 틀렸습니다.</p>
-        <div class="flex justify-end space-x-3 mt-6">
-            <button onclick="window.closeAdminLogin()" class="px-5 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">취소</button>
-            <button onclick="window.attemptAdminLogin()" class="px-5 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors">로그인</button>
+    <div id="admin-login-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-sm mx-4 transform transition-all">
+            <h2 class="text-2xl font-black mb-4 text-slate-800 flex items-center">
+                <i data-lucide="lock" class="mr-2 text-indigo-600"></i> 관리자 로그인
+            </h2>
+            <input type="password" id="admin-pw" class="w-full border-2 border-slate-200 rounded-xl p-4 mb-2 focus:outline-none focus:border-indigo-500 font-mono text-lg" placeholder="비밀번호 입력">
+            <p id="admin-error" class="text-rose-500 text-sm mb-4 font-bold hidden">비밀번호가 틀렸습니다.</p>
+            <div class="flex justify-end space-x-3 mt-6">
+                <button onclick="window.closeAdminLogin()" class="px-5 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">취소</button>
+                <button onclick="window.attemptAdminLogin()" class="px-5 py-2 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors">로그인</button>
+            </div>
         </div>
     </div>
-</div>
 
-<!-- ========================================== -->
-<!-- 2. HTML: 관리자 공지 수정 모달 -->
-<!-- ========================================== -->
-<div id="admin-edit-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden">
-    <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg mx-4">
-        <h2 class="text-2xl font-black mb-4 text-slate-800 flex items-center">
-            <i data-lucide="edit-3" class="mr-2 text-indigo-600"></i> 공지사항 수정
-        </h2>
-        <p class="text-sm text-slate-500 mb-4">입력한 내용은 실시간으로 모든 플레이어에게 보여집니다.</p>
-        <textarea id="notice-input" class="w-full border-2 border-slate-200 rounded-xl p-4 mb-6 focus:outline-none focus:border-indigo-500 h-32 resize-none text-lg font-medium text-slate-700" placeholder="새로운 공지사항을 입력하세요"></textarea>
-        <div class="flex justify-end space-x-3">
-            <button onclick="window.closeAdminEdit()" class="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">취소</button>
-            <button onclick="window.saveNotice()" class="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg">클라우드에 저장</button>
+    <!-- 관리자 공지 수정 모달 -->
+    <div id="admin-edit-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden">
+        <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg mx-4">
+            <h2 class="text-2xl font-black mb-4 text-slate-800 flex items-center">
+                <i data-lucide="edit-3" class="mr-2 text-indigo-600"></i> 공지사항 수정
+            </h2>
+            <p class="text-sm text-slate-500 mb-4">입력한 내용은 실시간으로 모든 플레이어에게 보여집니다.</p>
+            <textarea id="notice-input" class="w-full border-2 border-slate-200 rounded-xl p-4 mb-6 focus:outline-none focus:border-indigo-500 h-32 resize-none text-lg font-medium text-slate-700" placeholder="새로운 공지사항을 입력하세요"></textarea>
+            <div class="flex justify-end space-x-3">
+                <button onclick="window.closeAdminEdit()" class="px-6 py-3 bg-slate-100 text-slate-700 rounded-xl font-bold hover:bg-slate-200 transition-colors">취소</button>
+                <button onclick="window.saveNotice()" class="px-6 py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-colors shadow-lg">클라우드에 저장</button>
+            </div>
         </div>
     </div>
-</div>
-
-<!-- ========================================== -->
-<!-- 3. JavaScript: 핵심 로직 정의 (모듈 스크립트 연동 대비) -->
-<!-- ========================================== -->
-<script>
-    // 전역 상태 관리 (기존에 이미 선언되어 있다면 초기화 코드 위치 유의)
-    if (window.isAdmin === undefined) window.isAdmin = false;
-
-    // 1. 단축키 이벤트 리스너 (중복 방지를 위해 단 한 번만 등록)
-    if (!window.hasAdminShortcutRegistered) {
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Delete' || e.key === '\\' || e.key === '₩') {
-                const loginModal = document.getElementById('admin-login-modal');
-                const editModal = document.getElementById('admin-edit-modal');
-                
-                // 모달들이 모두 닫혀있을 때만 동작
-                if (loginModal && loginModal.classList.contains('hidden') && (!editModal || editModal.classList.contains('hidden'))) {
-                    e.preventDefault();
-                    
-                    if (!window.isAdmin) {
-                        loginModal.classList.remove('hidden');
-                        setTimeout(() => document.getElementById('admin-pw')?.focus(), 100);
-                    } else {
-                        if (typeof window.openAdminEdit === 'function') window.openAdminEdit();
-                    }
-                }
-            }
-        });
-        window.hasAdminShortcutRegistered = true;
-    }
-
-    // 2. 비밀번호 입력창 엔터 키 이벤트 등록
-    document.getElementById('admin-pw')?.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') window.attemptAdminLogin();
-    });
-
-    // 3. 로그인 모달 제어 함수들 (window에 명시적으로 바인딩)
-    window.closeAdminLogin = () => {
-        document.getElementById('admin-login-modal')?.classList.add('hidden');
-        const pwInput = document.getElementById('admin-pw');
-        if (pwInput) pwInput.value = '';
-        document.getElementById('admin-error')?.classList.add('hidden');
-    };
-
-    window.attemptAdminLogin = () => {
-        const pw = document.getElementById('admin-pw')?.value;
-        
-        if (pw === 'homerunentry9917@gmail.com') {
-            window.isAdmin = true;
-            window.closeAdminLogin();
-            
-            // 공지 수정 버튼 노출
-            const editBtn = document.getElementById('admin-edit-btn');
-            if (editBtn) editBtn.classList.remove('hidden');
-            
-            if (typeof window.showAlert === 'function') {
-                window.showAlert('인증 성공! 이제 공지사항을 수정할 수 있습니다.');
-            } else {
-                alert('인증 성공! 이제 관리자 기능을 사용할 수 있습니다.');
-            }
-        } else {
-            document.getElementById('admin-error')?.classList.remove('hidden');
-        }
-    };
-
-    // 4. 공지사항 수정 모달 제어 함수들 (Firebase 연동용)
-    window.openAdminEdit = () => {
-        if (!window.isAdmin) return;
-        const editModal = document.getElementById('admin-edit-modal');
-        const noticeInput = document.getElementById('notice-input');
-        
-        // 메인 화면 공지 텍스트가 있다면 불러와서 textarea에 미리 넣어줍니다.
-        const currentNoticeText = document.getElementById('current-notice-text')?.innerText || window.currentNotice || '';
-        if (noticeInput) noticeInput.value = currentNoticeText;
-        
-        if (editModal) editModal.classList.remove('hidden');
-    };
-
-    window.closeAdminEdit = () => {
-        document.getElementById('admin-edit-modal')?.classList.add('hidden');
-    };
-
-    // ※ Firebase 저장 로직 연동을 위해 window에 비어있는 함수 틀을 제공 (필요시 하단 모듈 스크립트에서 덮어쓰기 가능)
-    if (typeof window.saveNotice !== 'function') {
-        window.saveNotice = () => {
-            const text = document.getElementById('notice-input')?.value;
-            console.log('공지 저장 시도:', text);
-            // 이 자리에 원래 구현해두신 Firebase Firestore/RealtimeDB 실시간 업데이트 로직을 그대로 유지하시면 됩니다.
-            // 성공 후에는 window.closeAdminEdit()를 호출하세요.
-        };
-    }
-</script>
 
     <!-- Firebase 및 로직 스크립트 -->
     <script type="module">
@@ -345,7 +248,7 @@
         }
 
         // ==========================================
-        // 기본 UI 및 관리자 기능
+        // 기본 UI 및 관리자 기능 (단일화 통합)
         // ==========================================
         window.toggleFullScreen = () => {
             if (!document.fullscreenElement) {
@@ -402,6 +305,7 @@
         };
 
         window.openAdminEdit = () => {
+            if (!window.isAdmin) return;
             document.getElementById('admin-edit-modal').classList.remove('hidden');
             document.getElementById('notice-input').value = window.currentNotice;
             setTimeout(() => document.getElementById('notice-input').focus(), 100);
@@ -436,6 +340,7 @@
             window.closeAdminEdit();
         };
 
+
         // ==========================================
         // 미니게임 함수들 (28개)
         // ==========================================
@@ -458,31 +363,31 @@
                     </div>
                     <div id="rps-result" class="text-3xl font-black h-10 text-indigo-600 mt-6"></div>
                     <div class="flex space-x-4 mt-10">
-                        ${choices.map(c => `<button data-choice="${c}" class="rps-btn p-6 bg-white rounded-3xl shadow-md border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 text-5xl active:scale-95 transition-all">${emojis[c]}</button>`).join('')}
+                        ${ choices . map ( c => `<button data-choice=" ${ c } " class="rps-btn p-6 bg-white rounded-3xl shadow-md border-2 border-slate-100 hover:border-indigo-300 hover:bg-indigo-50 text-5xl active:scale-95 transition-all"> ${ emojis [ c ] } </button>` ) . join ( '' ) }
                     </div>
                 </div>
-            `;
+            ` ;
 
-            const play = (choice) => {
-                const compChoice = choices[Math.floor(Math.random() * 3)];
-                document.getElementById('rps-player').textContent = emojis[choice];
-                document.getElementById('rps-computer').textContent = emojis[compChoice];
+            const  play = ( choice ) => {
+                const  compChoice = choices [ Math.floor ( Math.random ( ) * 3 ) ] ;​​​​
+                document.getElementById ( ' rps-player ' ) . textContent = emojis [ choice ] ;
+                문서 . getElementById ( 'rps-컴퓨터' ) . textContent = 이모티콘 [ compChoice ] ;
 
-                let resText = '';
-                if (choice === compChoice) { resText = '비겼다!'; score.draw++; }
-                else if ((choice === '가위' && compChoice === '보') || (choice === '바위' && compChoice === '가위') || (choice === '보' && compChoice === '바위')) {
-                    resText = '이겼다!! 🎉'; score.win++;
-                } else { resText = '졌다... 😢'; score.lose++; }
+                resText  = ' ' ;
+                if  ( choice === compChoice )  {  resText = '비싸요!' ; 점수 . 그리기 ++; }
+                else  if  ( ( 선택 === '가위' && compChoice === '보' ) || ( 선택 === '바위' && compChoice === '가위' ) || ( 선택 === '보' && compChoice === '바위' ) )  {
+                    resText = '이렇습니다!! 🎉' ; 점수 . 승리 ++;
+                }  else  {  resText = '졌다... 😢' ; 점수 . 잃다 ++; }
                
-                document.getElementById('rps-result').textContent = resText;
-                document.getElementById('rps-win').textContent = score.win;
-                document.getElementById('rps-draw').textContent = score.draw;
-                document.getElementById('rps-lose').textContent = score.lose;
-            };
+                document.getElementById ( 'rps- result ' ) . textContent = resText ;
+                document.getElementById ( ' rps - win ' ) . textContent = score.win ;
+                document.getElementById ( ' rps - draw ' ) . textContent = score.draw ;
+                document.getElementById ( ' rps - lose ' ) . textContent = score.lose ;
+            } ;
 
-            container.querySelectorAll('.rps-btn').forEach(btn => {
-                btn.addEventListener('click', (e) => play(e.currentTarget.dataset.choice));
-            });
+            컨테이너 .querySelectorAll ( '.rps-btn' ) . forEach ( btn = > {
+                btn.addEventListener ( ' click ' , ( e ) = > play ( e.currentTarget.dataset.choice ) ) ;​​​​​
+            } ) ;
             return () => {};
         };
 
