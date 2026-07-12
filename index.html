@@ -184,25 +184,26 @@
     };
 
     window.attemptAdminLogin = () => {
-        const pw = document.getElementById('admin-pw')?.value;
+    const pw = document.getElementById('admin-pw')?.value;
+    
+    // 💡 하드코딩된 문자열 대신 CONFIG 객체의 값을 비교합니다.
+    if (pw === CONFIG.ADMIN_PASSWORD) {
+        window.isAdmin = true;
+        window.closeAdminLogin();
         
-        if (pw === 'homerunentry9917@gmail.com') {
-            window.isAdmin = true;
-            window.closeAdminLogin();
-            
-            // 공지 수정 버튼 노출
-            const editBtn = document.getElementById('admin-edit-btn');
-            if (editBtn) editBtn.classList.remove('hidden');
-            
-            if (typeof window.showAlert === 'function') {
-                window.showAlert('인증 성공! 이제 공지사항을 수정할 수 있습니다.');
-            } else {
-                alert('인증 성공! 이제 관리자 기능을 사용할 수 있습니다.');
-            }
+        // 공지 수정 버튼 노출
+        const editBtn = document.getElementById('admin-edit-btn');
+        if (editBtn) editBtn.classList.remove('hidden');
+        
+        if (typeof window.showAlert === 'function') {
+            window.showAlert('인증 성공! 이제 공지사항을 수정할 수 있습니다.');
         } else {
-            document.getElementById('admin-error')?.classList.remove('hidden');
+            alert('인증 성공! 이제 관리자 기능을 사용할 수 있습니다.');
         }
-    };
+    } else {
+        document.getElementById('admin-error')?.classList.remove('hidden');
+    }
+};
 
     // 4. 공지사항 수정 모달 제어 함수들 (Firebase 연동용)
     window.openAdminEdit = () => {
