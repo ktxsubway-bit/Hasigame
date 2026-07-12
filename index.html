@@ -122,9 +122,7 @@
     </div>
 </div>
 
-<!-- ========================================== -->
-<!-- 2. HTML: 관리자 공지 수정 모달 -->
-<!-- ========================================== -->
+<!-- 관리자 공지 수정 모달 -->
 <div id="admin-edit-modal" class="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center hidden">
     <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-lg mx-4">
         <h2 class="text-2xl font-black mb-4 text-slate-800 flex items-center">
@@ -139,80 +137,203 @@
     </div>
 </div>
 
-<!-- ========================================== -->
-<!-- 3. JavaScript: 핵심 로직 정의 (모듈 스크립트 연동 대비) -->
-<!-- ========================================== -->
-<script>
-    // 전역 상태 관리 (기존에 이미 선언되어 있다면 초기화 코드 위치 유의)
-    if (window.isAdmin === undefined) window.isAdmin = false;
+<!-- Firebase 및 로직 통합 모듈 스크립트 -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+    // 파이어베이스 이메일 인증을 위한 signInWithEmailAndPassword 함수를 추가로 로드합니다.
+    import { getAuth, signInAnonymously, onAuthStateChanged, signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+    import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-    // 1. 단축키 이벤트 리스너 (중복 방지를 위해 단 한 번만 등록)
-    if (!window.hasAdminShortcutRegistered) {
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Delete' || e.key === '\\' || e.key === '₩') {
-                const loginModal = document.getElementById('admin-login-modal');
-                const editModal = document.getElementById('admin-edit-modal');
-                
-                // 모달들이 모두 닫혀있을 때만 동작
-                if (loginModal && loginModal.classList.contains('hidden') && (!editModal || editModal.classList.contains('hidden'))) {
-                    e.preventDefault();
-                    
-                    if (!window.isAdmin) {
-                        loginModal.classList.remove('hidden');
-                        setTimeout(() => document.getElementById('admin-pw')?.focus(), 100);
-                    } else {
-                        if (typeof window.openAdminEdit === 'function') window.openAdminEdit();
-                    }
-                }
+    // 파이어베이스 설정값
+    const firebaseConfig = {
+      apiKey: "AIzaSyA9CfIdZ0DNkvUdOk3-GlMlHV_FbAFNnGk",
+      authDomain: "hasi-game.firebaseapp.com",
+      projectId: "hasi-game",
+      storageBucket: "hasi-game.firebasestorage.app",
+      messagingSenderId: "48274416774",
+      appId: "1:48274416774:web:c15811462fc618ebdd9d07",
+      measurementId: "G-FT9MYSD4GW"
+    };
+
+    const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+
+    // 전역 상태 관리 및 바인딩
+    window.currentNotice = "하시";
+    window.isAdmin = false;
+    window.currentCleanup = null;
+    let currentUser = null;
+    let db = null;
+    let noticeRef = null;
+    let auth = null;
+
+    // 공지사항 표시 업데이트 함수 (길면 스크롤)
+    window.updateNoticeDisplay = (text) => {
+        const container = document.getElementById('notice-container');
+        const textEl = document.getElementById('notice-text');
+        if(!container || !textEl) return;
+       
+        textEl.textContent = text;
+        textEl.classList.remove('scrolling-text');
+        textEl.style.paddingLeft = '0';
+       
+        requestAnimationFrame(() => {
+            if (textEl.scrollWidth > container.clientWidth) {
+                textEl.classList.add('scrolling-text');
+                textEl.style.paddingLeft = '100%';
             }
         });
-        window.hasAdminShortcutRegistered = true;
+    };
+
+    window.addEventListener('resize', () => {
+        if(window.currentNotice) window.updateNoticeDisplay(window.currentNotice);
+    });
+
+    // 알림 메시지 (토스트) 함수
+    window.showAlert = (msg) => {
+        const toast = document.getElementById('toast-message');
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.classList.remove('hidden');
+        setTimeout(() => toast.classList.remove('opacity-0'), 10);
+        setTimeout(() => {
+            toast.classList.add('opacity-0');
+            setTimeout(() => toast.classList.add('hidden'), 300);
+        }, 3000);
+    };
+
+    // 화면 전환 헬퍼
+    const showMenu = () => {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.classList.add('opacity-0');
+            setTimeout(() => overlay.classList.add('hidden'), 300);
+        }
+        document.getElementById('menu-screen')?.classList.remove('hidden');
+    };
+
+    try {
+        const app = initializeApp(firebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+        
+        // 사용자가 요청한 복잡하고 조용한 경로 그대로 매칭 완료
+        noticeRef = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'main_notice');
+
+        const initAuth = async () => {
+            try {
+                // 일반 유저는 접속 시 익명으로 우선 로그인 처리
+                await signInAnonymously(auth);
+            } catch(e) {
+                console.warn("Firebase 익명 로그인 에러 (로컬 모드로 진행합니다):", e.message);
+                showMenu();
+            }
+        };
+       
+        // 인증 상태 감시 및 실시간 데이터 동기화
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                const userInfoEl = document.getElementById('user-info');
+                if (userInfoEl) userInfoEl.innerText = `접속 ID: ${user.uid.substring(0, 8)}... (클라우드 연결됨)`;
+               
+                onSnapshot(noticeRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        window.currentNotice = docSnap.data().text;
+                        window.updateNoticeDisplay(window.currentNotice);
+                    }
+                }, (error) => {
+                    console.error("Firestore 규칙 또는 경로 매칭 에러:", error.message);
+                });
+               
+                showMenu();
+            }
+        });
+
+        initAuth();
+        window.updateNoticeDisplay(window.currentNotice);
+
+    } catch(e) {
+        console.error("Firebase 초기화 에러:", e);
+        showMenu();
     }
 
-    // 2. 비밀번호 입력창 엔터 키 이벤트 등록
+    // ==========================================
+    // 기본 UI 및 관리자 기능 통합 정의
+    // ==========================================
+    window.toggleFullScreen = () => {
+        if (!document.fullscreenElement) {
+            if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(e=>console.log(e));
+        } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+        }
+    };
+
+    document.addEventListener('fullscreenchange', () => {
+        const icon = document.getElementById('fs-icon-global');
+        if (!icon) return;
+        if (document.fullscreenElement) icon.setAttribute('data-lucide', 'minimize');
+        else icon.setAttribute('data-lucide', 'maximize');
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+    });
+
+    // 단축키 이벤트 리스너 (Delete, \, ₩)
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Delete' || e.key === '\\' || e.key === '₩') {
+            const loginModal = document.getElementById('admin-login-modal');
+            const editModal = document.getElementById('admin-edit-modal');
+            
+            if (loginModal && loginModal.classList.contains('hidden') && (!editModal || editModal.classList.contains('hidden'))) {
+                e.preventDefault();
+                if (!window.isAdmin) {
+                    loginModal.classList.remove('hidden');
+                    setTimeout(() => document.getElementById('admin-pw')?.focus(), 100);
+                } else {
+                    window.openAdminEdit();
+                }
+            }
+        }
+    });
+
     document.getElementById('admin-pw')?.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') window.attemptAdminLogin();
     });
 
-    // 3. 로그인 모달 제어 함수들 (window에 명시적으로 바인딩)
     window.closeAdminLogin = () => {
-        document.getElementById('admin-login-modal')?.classList.add('hidden');
+        const loginModal = document.getElementById('admin-login-modal');
+        if (loginModal) loginModal.classList.add('hidden');
         const pwInput = document.getElementById('admin-pw');
         if (pwInput) pwInput.value = '';
         document.getElementById('admin-error')?.classList.add('hidden');
     };
 
-    window.attemptAdminLogin = () => {
-        const pw = document.getElementById('admin-pw')?.value;
+    // 구형 로직을 지우고 파이어베이스 인증 시스템으로 직결되게 처리한 관리자 로그인 함수
+    window.attemptAdminLogin = async () => {
+        const pwInput = document.getElementById('admin-pw')?.value;
+        const errorEl = document.getElementById('admin-error');
         
-        if (pw === 'homerunentry9917@gmail.com') {
+        try {
+            // 파이어베이스 Authentication 서버에 저장된 비밀번호인 'ilikesuyugame' 검증 시도
+            await signInWithEmailAndPassword(auth, "ktxsubway@gmail.com", pwInput);
+            
             window.isAdmin = true;
             window.closeAdminLogin();
-            
-            // 공지 수정 버튼 노출
-            const editBtn = document.getElementById('admin-edit-btn');
-            if (editBtn) editBtn.classList.remove('hidden');
-            
-            if (typeof window.showAlert === 'function') {
-                window.showAlert('인증 성공! 이제 공지사항을 수정할 수 있습니다.');
-            } else {
-                alert('인증 성공! 이제 관리자 기능을 사용할 수 있습니다.');
+            document.getElementById('admin-edit-btn')?.classList.remove('hidden');
+            window.showAlert('👑 관리자 인증 성공! 실시간 공지 제어 권한을 획득했습니다.');
+        } catch(e) {
+            console.error("인증 실패:", e.message);
+            if (errorEl) {
+                errorEl.textContent = "비밀번호가 올바르지 않거나 관리자 인증에 실패했습니다.";
+                errorEl.classList.remove('hidden');
             }
-        } else {
-            document.getElementById('admin-error')?.classList.remove('hidden');
         }
     };
 
-    // 4. 공지사항 수정 모달 제어 함수들 (Firebase 연동용)
     window.openAdminEdit = () => {
         if (!window.isAdmin) return;
         const editModal = document.getElementById('admin-edit-modal');
         const noticeInput = document.getElementById('notice-input');
         
-        // 메인 화면 공지 텍스트가 있다면 불러와서 textarea에 미리 넣어줍니다.
-        const currentNoticeText = document.getElementById('current-notice-text')?.innerText || window.currentNotice || '';
-        if (noticeInput) noticeInput.value = currentNoticeText;
-        
+        if (noticeInput) noticeInput.value = window.currentNotice;
         if (editModal) editModal.classList.remove('hidden');
     };
 
@@ -220,221 +341,28 @@
         document.getElementById('admin-edit-modal')?.classList.add('hidden');
     };
 
-    // ※ Firebase 저장 로직 연동을 위해 window에 비어있는 함수 틀을 제공 (필요시 하단 모듈 스크립트에서 덮어쓰기 가능)
-    if (typeof window.saveNotice !== 'function') {
-        window.saveNotice = () => {
-            const text = document.getElementById('notice-input')?.value;
-            console.log('공지 저장 시도:', text);
-            // 이 자리에 원래 구현해두신 Firebase Firestore/RealtimeDB 실시간 업데이트 로직을 그대로 유지하시면 됩니다.
-            // 성공 후에는 window.closeAdminEdit()를 호출하세요.
-        };
-    }
-</script>
-
-    <!-- Firebase 및 로직 스크립트 -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // 파이어베이스 설정값
-        const firebaseConfig = {
-          apiKey: "AIzaSyA9CfIdZ0DNkvUdOk3-GlMlHV_FbAFNnGk",
-          authDomain: "hasi-game.firebaseapp.com",
-          projectId: "hasi-game",
-          storageBucket: "hasi-game.firebasestorage.app",
-          messagingSenderId: "48274416774",
-          appId: "1:48274416774:web:c15811462fc618ebdd9d07",
-          measurementId: "G-FT9MYSD4GW"
-        };
-
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-
-        // 전역 상태
-        window.currentNotice = "하시";
-        window.isAdmin = false;
-        window.currentCleanup = null;
-        let currentUser = null;
-        let db = null;
-        let noticeRef = null;
-        let auth = null;
-
-        // 공지사항 표시 업데이트 함수 (길면 스크롤)
-        window.updateNoticeDisplay = (text) => {
-            const container = document.getElementById('notice-container');
-            const textEl = document.getElementById('notice-text');
-            if(!container || !textEl) return;
+    window.saveNotice = async () => {
+        const inputVal = document.getElementById('notice-input')?.value;
+        if(inputVal && inputVal.trim() !== '') {
+            window.currentNotice = inputVal;
+            window.updateNoticeDisplay(window.currentNotice);
            
-            textEl.textContent = text;
-            textEl.classList.remove('scrolling-text');
-            textEl.style.paddingLeft = '0';
-           
-            requestAnimationFrame(() => {
-                if (textEl.scrollWidth > container.clientWidth) {
-                    textEl.classList.add('scrolling-text');
-                    textEl.style.paddingLeft = '100%';
-                }
-            });
-        };
-
-        window.addEventListener('resize', () => {
-            if(window.currentNotice) window.updateNoticeDisplay(window.currentNotice);
-        });
-
-        // 알림 메시지 (토스트) 함수
-        window.showAlert = (msg) => {
-            const toast = document.getElementById('toast-message');
-            toast.textContent = msg;
-            toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.remove('opacity-0'), 10);
-            setTimeout(() => {
-                toast.classList.add('opacity-0');
-                setTimeout(() => toast.classList.add('hidden'), 300);
-            }, 3000);
-        };
-
-        // 화면 전환 헬퍼
-        const showMenu = () => {
-            document.getElementById('loading-overlay').classList.add('opacity-0');
-            setTimeout(() => {
-                document.getElementById('loading-overlay').classList.add('hidden');
-            }, 300);
-            document.getElementById('menu-screen').classList.remove('hidden');
-        };
-
-        try {
-            const app = initializeApp(firebaseConfig);
-            auth = getAuth(app);
-            db = getFirestore(app);
-            noticeRef = doc(db, 'artifacts', appId, 'public', 'data', 'config', 'main_notice');
-
-            const initAuth = async () => {
+            if (db && currentUser) {
                 try {
-                    await signInAnonymously(auth);
+                    // 이제 관리자 계정으로 실인증을 거쳤기 때문에 보안 규칙을 무사히 통과하여 안정적으로 저장됩니다.
+                    await setDoc(noticeRef, { text: inputVal }, { merge: true });
+                    window.showAlert("🎉 클라우드 공지 저장 완료! 모든 플레이어에게 실시간 동기화됩니다.");
                 } catch(e) {
-                    console.warn("Firebase 익명 로그인 에러 (로컬 모드로 진행합니다):", e.message);
-                    showMenu();
+                    console.error("Cloud save failed", e);
+                    window.showAlert("저장 실패: " + e.message);
                 }
-            };
-           
-            // 인증 상태 감시 및 데이터 동기화
-            onAuthStateChanged(auth, (user) => {
-                if (user) {
-                    currentUser = user;
-                    document.getElementById('user-info').innerText = `접속 ID: ${user.uid.substring(0, 8)}... (클라우드 연결됨)`;
-                   
-                    onSnapshot(noticeRef, (docSnap) => {
-                        if (docSnap.exists()) {
-                            window.currentNotice = docSnap.data().text;
-                            window.updateNoticeDisplay(window.currentNotice);
-                        }
-                    }, (error) => {
-                        console.warn("Firestore 규칙을 'allow read, write: if true;'로 설정하면 정상 동기화됩니다.");
-                    });
-                   
-                    showMenu();
-                }
-            });
-
-            initAuth();
-            window.updateNoticeDisplay(window.currentNotice); // 초기 공지 표시
-
-        } catch(e) {
-            console.error("Firebase 초기화 에러:", e);
-            showMenu();
+            } else {
+                window.showAlert("로컬 모드로 임시 저장되었습니다.");
+            }
         }
-
-        // ==========================================
-        // 기본 UI 및 관리자 기능
-        // ==========================================
-        window.toggleFullScreen = () => {
-            if (!document.fullscreenElement) {
-                if (document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(e=>console.log(e));
-            } else {
-                if (document.exitFullscreen) document.exitFullscreen();
-            }
-        };
-
-        document.addEventListener('fullscreenchange', () => {
-            const icon = document.getElementById('fs-icon-global');
-            if (document.fullscreenElement) icon.setAttribute('data-lucide', 'minimize');
-            else icon.setAttribute('data-lucide', 'maximize');
-            lucide.createIcons();
-        });
-
-        // ￦ 또는 Delete 키 이벤트
-        window.addEventListener('keydown', (e) => {
-            if (e.key === 'Delete' || e.key === '\\' || e.key === '₩') {
-                const loginModal = document.getElementById('admin-login-modal');
-                const editModal = document.getElementById('admin-edit-modal');
-                if (loginModal.classList.contains('hidden') && editModal.classList.contains('hidden')) {
-                    e.preventDefault();
-                    if (!window.isAdmin) {
-                        loginModal.classList.remove('hidden');
-                        setTimeout(() => document.getElementById('admin-pw').focus(), 100);
-                    } else {
-                        window.openAdminEdit();
-                    }
-                }
-            }
-        });
-
-        document.getElementById('admin-pw').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') window.attemptAdminLogin();
-        });
-
-        window.closeAdminLogin = () => {
-            document.getElementById('admin-login-modal').classList.add('hidden');
-            document.getElementById('admin-pw').value = '';
-            document.getElementById('admin-error').classList.add('hidden');
-        };
-
-        window.attemptAdminLogin = () => {
-            const pw = document.getElementById('admin-pw').value;
-            if (pw === 'homerunentry9917@gmail.com') {
-                window.isAdmin = true;
-                window.closeAdminLogin();
-                document.getElementById('admin-edit-btn').classList.remove('hidden');
-                window.showAlert('인증 성공! 이제 공지사항을 수정할 수 있습니다.');
-            } else {
-                document.getElementById('admin-error').classList.remove('hidden');
-            }
-        };
-
-        window.openAdminEdit = () => {
-            document.getElementById('admin-edit-modal').classList.remove('hidden');
-            document.getElementById('notice-input').value = window.currentNotice;
-            setTimeout(() => document.getElementById('notice-input').focus(), 100);
-        };
-
-        window.closeAdminEdit = () => {
-            document.getElementById('admin-edit-modal').classList.add('hidden');
-        };
-
-        window.saveNotice = async () => {
-            const inputVal = document.getElementById('notice-input').value;
-            if(inputVal.trim() !== '') {
-                window.currentNotice = inputVal;
-                window.updateNoticeDisplay(window.currentNotice);
-               
-                if (db && currentUser) {
-                    try {
-                        await setDoc(noticeRef, { text: inputVal }, { merge: true });
-                        window.showAlert("🎉 클라우드 공지 저장 완료! 모든 플레이어에게 동기화됩니다.");
-                    } catch(e) {
-                        console.error("Cloud save failed", e);
-                        if (e.code === 'permission-denied') {
-                            window.showAlert("🚨 권한 오류: Firebase Firestore의 규칙(Rules)을 'allow read, write: if true;'로 변경해주세요.");
-                        } else {
-                            window.showAlert("저장 실패: " + e.message);
-                        }
-                    }
-                } else {
-                    window.showAlert("로컬 모드로 임시 저장되었습니다.");
-                }
-            }
-            window.closeAdminEdit();
-        };
+        window.closeAdminEdit();
+    };
+</script>
 
         // ==========================================
         // 미니게임 함수들 (28개)
