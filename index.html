@@ -202,21 +202,14 @@
     };
 
     // 화면 전환 헬퍼
-    // ❌ 기존의 showMenu 함수를 지우고 아래 코드로 교체합니다.
-const showMenu = () => {
-    const overlay = document.getElementById('loading-overlay');
-    if (overlay) {
-        overlay.classList.add('opacity-0');
-        setTimeout(() => {
-            overlay.classList.add('hidden');
-            // 메인 메뉴 화면이 정상적으로 존재할 때만 안전하게 열어줍니다.
-            const menuScreen = document.getElementById('menu-screen');
-            if (menuScreen && !window.isAdmin) {
-                menuScreen.classList.remove('hidden');
-            }
-        }, 300);
-    }
-};
+    const showMenu = () => {
+        const overlay = document.getElementById('loading-overlay');
+        if (overlay) {
+            overlay.classList.add('opacity-0');
+            setTimeout(() => overlay.classList.add('hidden'), 300);
+        }
+        document.getElementById('menu-screen')?.classList.remove('hidden');
+    };
 
     try {
         const app = initializeApp(firebaseConfig);
@@ -237,29 +230,24 @@ const showMenu = () => {
         };
        
         // 인증 상태 감시 및 실시간 데이터 동기화
-        // onAuthStateChanged 내부를 다음과 같이 안전하게 가드해 줍니다.
-onAuthStateChanged(auth, (user) => {
-    if (user) {
-        currentUser = user;
-        const userInfoEl = document.getElementById('user-info');
-        if (userInfoEl) userInfoEl.innerText = `접속 ID: ${user.uid.substring(0, 8)}... (클라우드 연결됨)`;
-       
-        onSnapshot(noticeRef, (docSnap) => {
-            if (docSnap.exists()) {
-                window.currentNotice = docSnap.data().text;
-                window.updateNoticeDisplay(window.currentNotice);
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                const userInfoEl = document.getElementById('user-info');
+                if (userInfoEl) userInfoEl.innerText = `접속 ID: ${user.uid.substring(0, 8)}... (클라우드 연결됨)`;
+               
+                onSnapshot(noticeRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        window.currentNotice = docSnap.data().text;
+                        window.updateNoticeDisplay(window.currentNotice);
+                    }
+                }, (error) => {
+                    console.error("Firestore 규칙 또는 경로 매칭 에러:", error.message);
+                });
+               
+                showMenu();
             }
-        }, (error) => {
-            console.error("Firestore 읽기 오류:", error.message);
         });
-       
-        // 🎯 이미 게임이 켜졌거나 메인 화면을 벗어난 상태라면 showMenu를 중복 실행하지 않습니다.
-        const editModal = document.getElementById('admin-edit-modal');
-        if (!editModal || editModal.classList.contains('hidden')) {
-            showMenu();
-        }
-    }
-});
 
         initAuth();
         window.updateNoticeDisplay(window.currentNotice);
